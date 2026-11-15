@@ -40,11 +40,17 @@
 
   function tile(L, key, extra) {
     const c = LAYERS[key];
-    return L.tileLayer(url(key), Object.assign({
+    const lyr = L.tileLayer(url(key), Object.assign({
       maxNativeZoom: c.maxNative, maxZoom: 19, minZoom: 3,
       bounds: L.latLngBounds(c.bounds), noWrap: true,
       errorTileUrl: BLANK, attribution: c.label,
     }, extra || {}));
+    // Si Mars Trek no responde (sin internet o red que lo bloquea), cada tesela cae a la copia local de ui/tiles.
+    if (!OFFLINE) lyr.on('tileerror', (e) => {
+      const t = e.tile, q = e.coords; if (!t || t.dataset.fb) return; t.dataset.fb = '1';
+      t.src = `${BASE}tiles/${c.id}/${q.z}/${q.y}/${q.x}.${c.ext}`;
+    });
+    return lyr;
   }
 
   // CRS de Marte: misma rejilla que EPSG:4326 pero con el radio de Marte,
