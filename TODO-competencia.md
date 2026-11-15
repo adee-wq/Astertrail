@@ -24,7 +24,7 @@
 ## BLOQUE A · Datos reales listos (09:50 – 10:55)
 - [x] A1 · Humo y datos de temperatura — P0 · 10 min
 - [x] A2 · Mapa base Mars Trek en Leaflet — P0 · 25 min
-- [ ] A3 · Elevación real de la zona — P0 · 30 min ⚠️
+- [x] A3 · Elevación real de la zona — P0 · 30 min ⚠️
 
 ## BLOQUE B · Herramienta funcional (10:55 – 13:00) — MVP
 - [ ] B1 · Menú (`ui/index.html`) — P0 · 15 min
@@ -46,6 +46,11 @@
 - [ ] D3 · Guion de 3 min
 - [ ] D4 · Holgura
 
+## Decisiones de Alan (después de B2)
+- TÉRMICO: el color sobre la ruta no aporta → la lectura pasa a una **gráfica** (T vs hora con el paso del astronauta). El mapa queda para la ruta.
+- El tiempo de misión sale de la física: v = min(v_crucero, η·P/F), F = m·g·(Crr·cosθ + sinθ); θ > θ_max → intransitable. **T_real = Ct × Σ Δt, Ct = 1.3**.
+- Vehículo: LRV 2 personas (REFERENCIA, VERIFICAR). "Momento correcto" = hora de salida que mejor cumple temperatura + batería.
+
 ## Lista de recortes (en orden)
 1. C3 · 2. `cache_tiles.py` · 3. x300 y alertas de curva · 4. DEM → HRSC 30 m / MOLA · 5. `regen = 0`
 Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
@@ -56,3 +61,4 @@ Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
 | A1 | humo + GP | `export_gp.py --sol 1520 --ltst 9 --hours 6` OK (REMS real, 500 pts, 1.2 s, T 234.9–256.0 K, σ media 2.64 K, 197 ocultos). `datos.html` sin errores. Fuente Jersey 10 local en `ui/fonts/`. | Único error de consola: `mapa.jpg` no existe en `mapa.html` (se elimina en B2). El script vive en `scripts/`: correr con `PYTHONPATH=src/model_marte`. |
 | A2 | Leaflet + Mars Trek | Leaflet 1.9.4 en `ui/vendor/leaflet/`. `ui/layers.js`: IMAGEN = CTX Gale (z12, ~10 m) + HiRISE Curiosity encima (z16, ~0.6 m); RELIEVE = MOLA+HRSC sombreado color (z8). Rejilla EQ = `L.CRS.EPSG4326` con R de Marte (escala en m reales). `scripts/cache_tiles.py` bajó 1113 teselas (50 MB) a `ui/tiles/`; `?offline=1` probado sin red. | Hubo que crear el entorno de red `astertrail` (trek.nasa.gov, planetarymaps.usgs.gov, astrogeology.usgs.gov, zenodo.org). HiRISE solo cubre 137.12–137.73 E, 4.25–4.93 S: la ruta demo debe quedar dentro. |
 | B2 | mapa unificado | `mapa.html` sobre Leaflet + Mars Trek, ruta en [lat,lon] (clave `astertrail.ruta.geo`), distancias geodésicas, PLAY/barra/MÍN/bandas conservados. Pestañas TÉRMICO (ruta por temperatura) y GEOTOPOLÓGICO (ruta neutra, relieve MOLA semitransparente con opacidad, panel de terreno). `BASE: IMAGEN/RELIEVE`. `_tiles.html` eliminado. | Elevación/pendiente en GEO quedan "PRÓXIMAMENTE" hasta A3. Ruta demo 3.53 km dentro de HiRISE; se reajusta con el DEM. Pendiente: etiquetas del eje X de la gráfica GP se encimen en el panel estrecho (B4). |
+| A3 | DEM real | `scripts/export_dem.py` lee por /vsicurl/ el DEM USGS 1 m (overviews) → `ui/data/dem.js` 711×711 a 10 m (137.32–137.44 E, 4.66–4.78 S), Uint16 0.1 m, 1.35 MB. `ui/dem.js` puro: `elev`, `slope`, `covers`. Elev −4481…−3520 m, pendiente mediana 6.3°. Conectado al panel GEOTOPOLÓGICO (elev/pend. del astronauta y del cursor, desnivel +352/−31 m). | Lectura tardó ~4 min por red (solo una vez). En tu PC: `uv run --with rasterio python scripts/export_dem.py`. |

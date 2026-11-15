@@ -88,6 +88,8 @@
 <script src="px-button.js" defer></script>
 <script src="gp-chart.js" defer></script>
 <script src="data/gp-data.js" defer></script>
+<script src="dem.js"></script>
+<script src="data/dem.js"></script>
 </head>
 <body>
   <div id="map"></div>
@@ -121,9 +123,11 @@
       <div class="row"><span class="k">longitud total</span><b id="gLen">--</b></div>
       <div class="row"><span class="k">waypoints</span><b id="gWp">--</b></div>
       <div class="row"><span class="k">cursor</span><b id="gCur">--</b></div>
-      <div class="row"><span class="k">elevación</span><b>--</b></div>
-      <div class="row"><span class="k">pendiente</span><b>--</b></div>
-      <div class="soon">ELEVACIÓN Y PENDIENTE: DEM USGS de Gale — PRÓXIMAMENTE</div>
+      <div class="row"><span class="k">elevación (tú)</span><b id="gEl">--</b></div>
+      <div class="row"><span class="k">pendiente (tú)</span><b id="gSl">--</b></div>
+      <div class="row"><span class="k">elev. / pend. cursor</span><b id="gCurE">--</b></div>
+      <div class="row"><span class="k">desnivel ruta</span><b id="gUp">--</b></div>
+      <div class="note" id="gSrc"></div>
       <div class="note">Distancias geodésicas sobre Marte (R = 3389.5 km). El relieve de color es MOLA/HRSC (~200 m/px): orientativo, no sirve para pendientes de EVA.</div>
     </section>
 
@@ -192,6 +196,8 @@ const CONFIG = {
 };
 const STORE = 'astertrail.ruta.geo';   // [lat, lon]; la clave vieja (píxeles) ya no se usa
 const A = window.AST_LAYERS;
+const dem = window.DEM_DATA ? DEM.from(window.DEM_DATA) : null;
+const fmtE = (lat, lon) => { const e = dem && dem.elev(lat, lon), sl = dem && dem.slope(lat, lon); return e === null || !dem ? 'fuera del DEM' : `${e.toFixed(0)} m · ${sl === null ? '--' : sl.toFixed(1) + '°'}`; };
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -329,9 +335,18 @@ function update() {
     $('dist').textContent = `${fmtKm(f * g.L)} de ${fmtKm(g.L)}`;
     const q = posAt(g, f);
     $('gPos').textContent = fmtLL(q[0], q[1]); $('gDist').textContent = fmtKm(f * g.L);
+    const e = dem && dem.elev(q[0], q[1]), sl = dem && dem.slope(q[0], q[1]);
+    $('gEl').textContent = e == null ? 'fuera del DEM' : `${e.toFixed(0)} m`;
+    $('gSl').textContent = sl == null ? '--' : `${sl.toFixed(1)}°`;
   } else { $('gPos').textContent = $('gDist').textContent = '--'; }
   $('gLen').textContent = route.length > 1 ? fmtKm(g.L) : '--';
   $('gWp').textContent = route.length;
+  if (dem && route.length > 1) {          // desnivel acumulado muestreando cada ~10 m
+    let up = 0, dn = 0, prev = null; const n = Math.max(2, Math.ceil(g.L / 10));
+    for (let k = 0; k <= n; k++) { const q = posAt(g, k / n), e = dem.elev(q[0], q[1]); if (e != null && prev != null) { if (e > prev) up += e - prev; else dn += prev - e; } if (e != null) prev = e; }
+    $('gUp').textContent = `+${up.toFixed(0)} m / −${dn.toFixed(0)} m`;
+  }
+  $('gSrc').textContent = dem ? `Elevación y pendiente: ${dem.meta.source}, a ${dem.meta.res_m} m. Fuera del recorte no hay dato.` : 'Sin DEM: corre scripts/export_dem.py';
   $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(r.t)} LTST`;
   const cb = $('chart').querySelector('canvas');
   if (cb) { const w = cb.clientWidth; Object.assign($('cursor').style, { left: (70 + f * (w - 96)) + 'px', height: (cb.clientHeight - 96) + 'px' }); }
@@ -350,7 +365,7 @@ map.on('click', (e) => {
   if (!editing) return;
   route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); save(route); redraw();
 });
-map.on('mousemove', (e) => { $('gCur').textContent = fmtLL(e.latlng.lat, e.latlng.lng); });
+map.on('mousemove', (e) => { $('gCur').textContent = fmtLL(e.latlng.lat, e.latlng.lng); $('gCurE').textContent = fmtE(e.latlng.lat, e.latlng.lng); });
 function redraw() { drawRoute(); drawPins(); update(); }
 
 function relabel(btn, txt) { btn.dataset.label = txt; btn.textContent = txt; PxButton.render(btn); }
