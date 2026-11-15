@@ -15,9 +15,12 @@
  *   Ct: el tiempo real es Ct × tiempo de conducción (paradas, maniobras, navegación, terreno que el DEM no ve).
  *       Durante ese tiempo extra no hay tracción, pero sí térmica y auxiliares.
  *   SOC = 1 − E/E_bat
+ *   Radiación: dose_mSv = 0.67 mSv/día × duración real (RAD de Curiosity, Hassler et al. 2014)
  */
 (function () {
   const G_MARS = 3.71, R_MARS = 3389500, RAD = Math.PI / 180;
+  // Radiación en superficie: 0.67 mSv por día terrestre (MSL/RAD en Gale; Hassler et al. 2014, Science 343, 1244797).
+  const DOSIS_mSv_DIA = 0.67, LIMITE_CARRERA_mSv = 600;   // límite de carrera NASA-STD-3001
 
   // Parámetros de referencia: Apollo Lunar Roving Vehicle (LRV), 2 astronautas. REFERENCIA, VERIFICAR.
   const VEHICULO = {
@@ -171,6 +174,7 @@
       Tlo_min: Tmin, t_Tlo_min: tTmin, desnivel_up: up, desnivel_dn: dn,
       blocked_m: blockedM, theta_max_ruta: Math.max(...s.map((p) => Math.abs(p.theta))) / RAD,
       sin_dem: noDem, sin_gp: noGp, n,
+      dose_mSv: DOSIS_mSv_DIA * dur / 86400,             // dosis equivalente de la salida (duración real, con Ct)
     };
     return { s, summary, vehicle: V };
   }
@@ -201,6 +205,6 @@
     return { all: res, best };
   }
 
-  const API = { VEHICULO, G_MARS, simulate, verdict, scanDepartures, resample, gpAt, dist };
+  const API = { VEHICULO, G_MARS, DOSIS_mSv_DIA, LIMITE_CARRERA_mSv, simulate, verdict, scanDepartures, resample, gpAt, dist };
   if (typeof module !== 'undefined') module.exports = API; else window.SIM = API;
 })();

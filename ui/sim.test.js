@@ -53,6 +53,14 @@ t('pendiente > θ_max: intransitable y NO-GO', () => {
   assert.strictEqual(SIM.verdict(r).level, 'NO-GO');
 });
 
+t('radiación: 0.67 mSv/día × duración real', () => {
+  const r = run(recta, plane(0)), S = r.summary;
+  assert(Math.abs(S.dose_mSv - 0.67 * S.dur_s / 86400) < 1e-12);
+  const b = run(recta, plane(0), { Ct: 2.6 });
+  assert(Math.abs(b.summary.dose_mSv / run(recta, plane(0), { Ct: 1.3 }).summary.dose_mSv - 2) < 1e-9, 'proporcional a la duración');
+  assert(S.dose_mSv > 0 && S.dose_mSv < SIM.LIMITE_CARRERA_mSv);
+});
+
 t('frío: más potencia térmica', () => {
   const cold = { pred: { t: [1520, 1522], mu: [200, 200], sigma: [2, 2] } };
   const a = run(recta, plane(0)), b = SIM.simulate({ route: recta, dem: plane(0), gp: cold, t0: 1520.375 });
