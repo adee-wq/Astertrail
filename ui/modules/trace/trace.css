@@ -8,7 +8,7 @@
 .trrover::after { content: ''; position: absolute; inset: -14px; box-shadow: 0 0 0 2px var(--ast-orange); animation: ping 1.6s steps(6) infinite; }
 #map.tredit, #map.tredit .leaflet-interactive { cursor: crosshair; }
 
-#mod-trace .tbar { position: fixed; top: var(--toph, 84px); left: 18px; right: var(--side); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 800; pointer-events: none; }
+#mod-trace .tbar { position: fixed; top: var(--toph, 84px); left: 18px; right: calc(var(--panel-w) + 30px); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 800; pointer-events: none; }
 #mod-trace .tbar > * { pointer-events: auto; }
 #mod-trace .brand { display: flex; flex-direction: column; margin-right: 6px; }
 #mod-trace .brand b { font-weight: normal; font-size: 30px; color: var(--ast-orange); line-height: 1; text-shadow: 3px 3px 0 var(--ast-abyss); }
@@ -44,3 +44,14 @@
 #mod-trace .modal .px-panel { width: min(760px, 94vw); max-height: 90vh; overflow-y: auto; }
 #mod-trace .modal h2 { font-weight: normal; font-size: 44px; margin: 0 0 6px; }
 #mod-trace .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+
+/* acordeones: un apartado se pliega/despliega con clic en su título */
+#mod-trace aside { top: var(--toph, 90px); display: flex; flex-direction: column; }
+#mod-trace aside > section.rss-sec { order: -1; }
+#mod-trace section.acc > .px-panel__head { cursor: pointer; user-select: none; }
+#mod-trace section.acc > .px-panel__head::after { content: '▾'; margin-left: auto; font-size: 26px; color: #9fc8ea; }
+#mod-trace section.acc.collapsed > .px-panel__head::after { content: '▸'; }
+#mod-trace section.acc.collapsed > :not(.px-panel__head) { display: none !important; }
+#mod-trace section.acc.collapsed > .px-panel__head { margin-bottom: 0; }
+#mod-trace details > summary { cursor: pointer; font-size: 20px; color: #f26306; margin-top: 8px; list-style: none; }
+#mod-trace details > summary::before { content: '▸ '; } #mod-trace details[open] > summary::before { content: '▾ '; }

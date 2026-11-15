@@ -26,14 +26,14 @@
     <button class="px-btn" data-size="sm" id="tr-close">VOLVER A BASE</button>
     <button class="px-btn" data-size="sm" id="tr-clear">BORRAR</button>
     <button class="px-btn" data-size="sm" id="tr-fit">CENTRAR</button>
-    <span class="hint" id="tr-hint"></span>
+    <span class="hint" id="tr-hint" hidden></span>
   </div>
   <aside>
-    <section class="px-panel">
-      <div class="px-panel__head"><span id="tr-mName" style="font-size:30px;color:#f26306">MISIÓN</span></div>
+    <section class="px-panel acc">
+      <div class="px-panel__head"><span id="tr-mName" style="font-size:28px;color:#f26306">MISIÓN</span></div>
       <p class="txt" id="tr-mBrief"></p><div class="obj" id="tr-mObj"></div><p class="note" id="tr-mSrc"></p>
     </section>
-    <section class="px-panel">
+    <section class="px-panel acc rss-sec">
       <div class="px-panel__head"><span class="px-label" data-size="sm" data-color="#e8f4ff">ROUTE SAFETY SCORE</span></div>
       <div class="rss"><span class="n" id="tr-rssN">--</span><span class="c" id="tr-rssC">--</span></div>
       <div id="tr-msgs"></div>
@@ -41,16 +41,17 @@
       <div class="row"><span class="k">distancia</span><b id="tr-eDist">--</b></div>
       <div class="row"><span class="k">duración estimada</span><b id="tr-eDur">--</b></div>
       <div class="row"><span class="k">batería al volver</span><b id="tr-eSoc">--</b></div>
+      <details><summary>VER TRAMOS (S · G · T · A · P)</summary>
       <table class="segs" id="tr-segs"></table>
-      <p class="note">Riesgo por tramo (0–100): S pendiente ·35 %, G rugosidad ·30 %, T temperatura ·20 %, A accesibilidad ·15 %. P = 100 − R. Un tramo con P &lt; 25 limita el RSS a 49. El RSS es un índice del simulador, no una probabilidad real.</p>
+      <p class="note">Riesgo por tramo (0–100): S pendiente ·35 %, G rugosidad ·30 %, T temperatura ·20 %, A accesibilidad ·15 %. P = 100 − R. Un tramo con P &lt; 25 limita el RSS a 49. El RSS es un índice del simulador, no una probabilidad real.</p></details>
     </section>
-    <section class="px-panel">
-      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PROGRESO</span></div>
+    <section class="px-panel acc collapsed">
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PROGRESO Y MEDALLAS</span></div>
       <div class="row"><span class="k">mejor RSS (misión cumplida)</span><b id="tr-gBest">--</b></div>
       <div class="row"><span class="k">intentos</span><b id="tr-gN">0</b></div>
       <div class="medals" id="tr-gMed"></div>
     </section>
-    <section class="px-panel">
+    <section class="px-panel acc collapsed">
       <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">CÓMO JUGAR</span></div>
       <p class="txt"><b style="color:#f26306;font-weight:normal">LISTO/TRAZAR</b>: clic en el mapa añade waypoints desde la base; arrastra para mover; doble clic borra; clic en un tramo inserta; clic en un waypoint vuelve a pasar por él. <b style="color:#f26306;font-weight:normal">VOLVER A BASE</b> cierra la ruta.</p>
       <p class="txt">Tramos coloreados por seguridad (P): verde seguro, naranja precaución, rojo peligroso o intransitable.</p>
@@ -123,6 +124,7 @@
       $('again').onclick = () => { $('modal').hidden = true; this.runLayer.clearLayers(); this.rover.remove(); this.editing = true; this.relabel($('edit'), 'LISTO'); this.drawRoute(); this.panel(); };
       $('toMap').onclick = () => { $('modal').hidden = true; this.onExit && this.onExit(); };
       if (window.PxButton) PxButton.renderAll(this.root);
+      this.root.querySelectorAll('section.acc > .px-panel__head').forEach((h) => { h.onclick = () => h.parentElement.classList.toggle('collapsed'); });
       this.changed(); this.fit();
     }
     deactivate() {
