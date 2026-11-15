@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Astertrail · Mapa térmico de la misión</title>
+<title>Astertrail · Mapa de la misión</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="px-button.css">
 <link rel="stylesheet" href="px-panel.css">
 <style>
@@ -12,19 +13,17 @@
   body { background: var(--ast-abyss); color: var(--ast-sky); font-family: var(--px-font); }
 
   /* ---------- mapa ---------- */
-  #map { position: fixed; inset: 0; overflow: hidden; background: #020c1d; cursor: grab; touch-action: none; }
-  #map.dragging { cursor: grabbing; }
-  #map.edit { cursor: crosshair; }
-  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-  #world img { display: block; user-select: none; -webkit-user-drag: none; filter: saturate(.85) contrast(1.05); }
-  #world svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  #map { position: fixed; inset: 0; background: #020c1d; }
+  #map.edit, #map.edit .leaflet-interactive { cursor: crosshair; }
+  .leaflet-container { font-family: var(--px-font); }
+  .leaflet-tile-pane { filter: saturate(.85) contrast(1.05); }
+  .leaflet-div-icon.pw { background: none; border: 0; }
+  .leaflet-control-scale { margin-left: 18px !important; margin-bottom: 104px !important; }
+  .leaflet-control-scale-line { font-size: 16px; background: rgba(4,23,52,.8); color: #e8f4ff; border-color: #e8f4ff; }
   /* rejilla de coordenadas + viñeta: aspecto de pantalla de navegación */
   #grid { position: fixed; inset: 0; pointer-events: none;
     background:
-      radial-gradient(ellipse at 45% 50%, transparent 55%, rgba(2,12,29,.75) 100%),
-      repeating-linear-gradient(0deg, rgba(81,180,245,.07) 0 1px, transparent 1px 64px),
-      repeating-linear-gradient(90deg, rgba(81,180,245,.07) 0 1px, transparent 1px 64px); }
-  #pins { position: fixed; inset: 0; pointer-events: none; }
+      radial-gradient(ellipse at 45% 50%, transparent 60%, rgba(2,12,29,.6) 100%); z-index: 400; }
   .pin { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
   .wp { width: 10px; height: 10px; background: var(--ast-abyss); box-shadow: 0 0 0 2px #e8f4ff; }
   .wp span { position: absolute; left: 14px; top: -8px; font-size: 18px; color: #e8f4ff; text-shadow: 2px 2px 0 var(--ast-abyss); }
@@ -44,6 +43,11 @@
   .top .spacer { flex: 1; }
   .hint { font-size: 20px; color: #9fc8ea; text-shadow: 2px 2px 0 var(--ast-abyss); }
   .demo { font-size: 20px; color: var(--ast-orange); text-shadow: 2px 2px 0 var(--ast-abyss); }
+  .tabs { display: flex; gap: 6px; }
+  .op { display: flex; align-items: center; gap: 8px; font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 2px 10px; box-shadow: 0 0 0 2px var(--ast-navy); }
+  .op input[type=range] { width: 110px; flex: none; }
+  .soon { font-size: 20px; line-height: 1.2; color: var(--ast-orange); }
+  .credits { font-size: 16px; line-height: 1.2; color: #7fa6cc; }
 
   aside { position: fixed; top: 10px; right: 10px; bottom: 10px; width: 392px; overflow-y: auto; overflow-x: hidden; }
   aside .px-panel { margin: 8px 8px 16px; }
@@ -79,22 +83,26 @@
     .timebar { bottom: calc(46vh + 24px); }
   }
 </style>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="layers.js"></script>
 <script src="px-button.js" defer></script>
 <script src="gp-chart.js" defer></script>
 <script src="data/gp-data.js" defer></script>
 </head>
 <body>
-  <div id="map">
-    <div id="world"><img id="sat" alt=""><svg id="route"></svg></div>
-  </div>
+  <div id="map"></div>
   <div id="grid"></div>
-  <div id="pins"></div>
 
   <div class="top">
     <button class="px-btn" data-size="sm" id="back">BACK</button>
-    <span class="px-label" data-size="sm" data-color="#f26306">ASTERTRAIL · MAPA TÉRMICO</span>
+    <div class="tabs">
+      <button class="px-btn" data-size="sm" data-variant="danger" id="tabTerm">MAPA · TÉRMICO</button>
+      <button class="px-btn" data-size="sm" id="tabGeo">MAPA · GEOTOPOLÓGICO</button>
+    </div>
     <span class="spacer"></span>
     <span class="demo" id="demo" hidden>DATOS DE DEMO — corre export_gp.py</span>
+    <button class="px-btn" data-size="sm" id="base">BASE: IMAGEN</button>
+    <label class="op" id="opBox" hidden>RELIEVE <input type="range" id="op" min="0" max="100" value="60" aria-label="Opacidad del relieve"></label>
     <button class="px-btn" data-size="sm" id="mode">COLOR: MEDIA</button>
     <button class="px-btn" data-size="sm" id="edit">EDITAR RUTA</button>
     <button class="px-btn" data-size="sm" id="undo" hidden>DESHACER</button>
@@ -103,7 +111,23 @@
   </div>
 
   <aside>
-    <section class="px-panel">
+    <section class="px-panel" data-view="geo" hidden>
+      <div class="px-panel__head">
+        <span class="px-label" data-size="sm" data-color="#e8f4ff">TERRENO EN RUTA</span>
+        <div class="px-panel__meta" id="gWhere"></div>
+      </div>
+      <div class="row"><span class="k">posición</span><b id="gPos">--</b></div>
+      <div class="row"><span class="k">recorrido</span><b id="gDist">--</b></div>
+      <div class="row"><span class="k">longitud total</span><b id="gLen">--</b></div>
+      <div class="row"><span class="k">waypoints</span><b id="gWp">--</b></div>
+      <div class="row"><span class="k">cursor</span><b id="gCur">--</b></div>
+      <div class="row"><span class="k">elevación</span><b>--</b></div>
+      <div class="row"><span class="k">pendiente</span><b>--</b></div>
+      <div class="soon">ELEVACIÓN Y PENDIENTE: DEM USGS de Gale — PRÓXIMAMENTE</div>
+      <div class="note">Distancias geodésicas sobre Marte (R = 3389.5 km). El relieve de color es MOLA/HRSC (~200 m/px): orientativo, no sirve para pendientes de EVA.</div>
+    </section>
+
+    <section class="px-panel" data-view="term">
       <div class="px-panel__head">
         <span class="px-label" data-size="sm" data-color="#e8f4ff">LECTURA EN RUTA</span>
         <div class="px-panel__meta" id="where"></div>
@@ -121,7 +145,7 @@
       <div class="note">El estado se decide con el peor caso (límite frío del 95 %), no con la media.</div>
     </section>
 
-    <section class="px-panel">
+    <section class="px-panel" data-view="term">
       <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">TEMPERATURA DURANTE LA MISIÓN</span></div>
       <div id="chartWrap"><div class="px-chart" id="chart"></div><div id="cursor"></div></div>
     </section>
@@ -131,6 +155,8 @@
       <p>La línea es tu ruta. Cada tramo tiene el color de la temperatura del aire <b>a la hora en que vas a pasar por ahí</b>.</p>
       <p>El punto azul marca el momento más frío de la salida; el naranja eres tú en la hora de la barra de abajo.</p>
       <p>La temperatura viene de REMS (Curiosity) e interpolada por el modelo. Vale para terreno llano cercano; no incluye sombras, pendientes ni la temperatura del suelo.</p>
+      <p><b>GEOTOPOLÓGICO</b>: la misma ruta sobre el relieve. Cambia la base con <b>BASE</b> y la transparencia con <b>RELIEVE</b>.</p>
+      <div class="credits" id="credits"></div>
     </section>
   </aside>
 
@@ -145,8 +171,6 @@
    CONFIGURACIÓN — lo único que deberías tocar
    ========================================================= */
 const CONFIG = {
-  imagen: 'mapa.jpg',        // tu imagen satelital, dentro de ui/
-  metrosPorPixel: null,      // escala de la imagen en m/px (p. ej. 0.25 para HiRISE). null = no muestra distancias
   lugar: 'CRÁTER GALE',
   escala: { min: 180, max: 280 },   // K que cubre la escala de color
   // Bandas ILUSTRATIVAS por temperatura del aire (K). Cámbialas por los límites reales
@@ -161,10 +185,13 @@ const CONFIG = {
     { max: Infinity, nombre: 'VENTANA TEMPLADA', color: '#f26306',
       consejo: 'Mejor ventana térmica del sol: buen momento para tareas largas o lejos de la base.' },
   ],
-  rutaDemo: [[0.16, 0.74], [0.27, 0.63], [0.38, 0.61], [0.49, 0.50], [0.60, 0.44], [0.70, 0.33], [0.80, 0.27]],
+  // Ruta demo [lat, lon] dentro de la cobertura HiRISE y de la caché offline (ui/tiles).
+  rutaDemo: [[-4.7050, 137.3550], [-4.7120, 137.3620], [-4.7160, 137.3710], [-4.7240, 137.3760],
+             [-4.7310, 137.3850], [-4.7380, 137.3910], [-4.7440, 137.3990]],
   segundosAnimacion: 20,     // PLAY recorre toda la misión en este tiempo
 };
-const STORE = 'astertrail.ruta';
+const STORE = 'astertrail.ruta.geo';   // [lat, lon]; la clave vieja (píxeles) ya no se usa
+const A = window.AST_LAYERS;
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -186,7 +213,9 @@ function colorK(k) {
 }
 const banda = (k) => CONFIG.bandas.find((b) => k < b.max);
 const save = (r) => { try { localStorage.setItem(STORE, JSON.stringify(r)); } catch (e) {} };
-const load = () => { try { const r = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(r)) return r; } catch (e) {} return null; };
+const load = () => { try { const r = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(r) && r.every((p) => Array.isArray(p) && Math.abs(p[0]) <= 90)) return r; } catch (e) {} return null; };
+const fmtKm = (m) => m < 1000 ? `${m.toFixed(0)} m` : `${(m / 1000).toFixed(2)} km`;
+const fmtLL = (lat, lon) => `${Math.abs(lat).toFixed(4)}° ${lat < 0 ? 'S' : 'N'}, ${lon.toFixed(4)}° E`;
 
 /* ---------- datos de demo si no hay export_gp.py ---------- */
 function demoData() {
@@ -202,16 +231,27 @@ function demoData() {
 }
 
 /* ---------- estado ---------- */
-let D, W = 1600, H = 1000, tx = 0, ty = 0, s = 1, f = 0;
+let D, f = 0, view = 'term', baseKey = 'imagen';
 let route = load() || CONFIG.rutaDemo.map((p) => p.slice());
 let editing = false, worstMode = false, playing = false;
-const map = $('map'), world = $('world'), svg = $('route'), pins = $('pins');
 
-/* ---------- geometría de la ruta ---------- */
+/* ---------- mapa Leaflet (Mars Trek) ---------- */
+const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: 3, maxZoom: 19,
+                           zoomControl: false, attributionControl: false });
+L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+const BASES = A.bases(L);
+const baseLayers = { imagen: BASES['IMAGEN · HiRISE/CTX'], relieve: BASES['RELIEVE · MOLA/HRSC'] };
+const reliefOver = A.tile(L, 'relieve', { opacity: 0.6, zIndex: 5 });   // relieve semitransparente en GEOTOPOLÓGICO
+baseLayers.imagen.addTo(map);
+const routeLayer = L.layerGroup().addTo(map), pinLayer = L.layerGroup().addTo(map);
+const icon = (cls, html = '') => L.divIcon({ className: 'pw', iconSize: [0, 0], html: `<div class="pin ${cls}">${html}</div>` });
+const astro = L.marker(A.CENTER, { icon: icon('astro'), interactive: false, zIndexOffset: 1000 });
+
+/* ---------- geometría de la ruta (geodésica) ---------- */
 function geom() {
-  const p = route.map(([x, y]) => [x * W, y * H]), cum = [0];
-  for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
-  return { p, cum, L: cum[cum.length - 1] };
+  const p = route, cum = [0];
+  for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + A.dist(p[i - 1], p[i]));
+  return { p, cum, L: cum[cum.length - 1] || 0 };
 }
 function posAt(g, u) {                    // u en [0,1] a lo largo de la ruta (por distancia)
   if (g.p.length === 1 || g.L === 0) return g.p[0];
@@ -231,44 +271,43 @@ function sample(u) {                      // GP interpolado linealmente en la fr
 }
 
 /* ---------- dibujo ---------- */
-const NS = 'http://www.w3.org/2000/svg';
-const el = (tag, at) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); return e; };
 function drawRoute() {
-  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.innerHTML = '';
+  routeLayer.clearLayers();
   if (route.length < 2) return;
   const g = geom();
-  svg.appendChild(el('polyline', { points: g.p.map((q) => q.join(',')).join(' '), fill: 'none', stroke: '#041734',
-    'stroke-width': 11, 'stroke-linejoin': 'round', 'stroke-linecap': 'square', 'vector-effect': 'non-scaling-stroke' }));
+  L.polyline(g.p, { color: '#041734', weight: 11, lineJoin: 'round', interactive: false }).addTo(routeLayer);
+  if (view === 'geo') {                  // terreno: ruta neutra, sin temperatura
+    L.polyline(g.p, { color: '#f26306', weight: 5, dashArray: '10 6', interactive: false }).addTo(routeLayer);
+    return;
+  }
   const P = D.pred;
   for (let i = 0; i < P.t.length - 1; i++) {
     const a = posAt(g, clamp(fracOf(P.t[i]), 0, 1)), b = posAt(g, clamp(fracOf(P.t[i + 1]), 0, 1));
-    svg.appendChild(el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: colorK(metric(i)),
-      'stroke-width': 6, 'stroke-linecap': 'round', 'vector-effect': 'non-scaling-stroke' }));
+    L.polyline([a, b], { color: colorK(metric(i)), weight: 6, lineCap: 'round', interactive: false }).addTo(routeLayer);
   }
 }
-function pin(x, y, cls, html = '') {
-  const d = document.createElement('div'); d.className = 'pin ' + cls; d.innerHTML = html;
-  d.style.left = (tx + x * s) + 'px'; d.style.top = (ty + y * s) + 'px'; pins.appendChild(d); return d;
-}
 function drawPins() {
-  pins.innerHTML = '';
-  if (!route.length) return;
+  pinLayer.clearLayers();
+  if (!route.length) { astro.remove(); return; }
   const g = geom();
-  g.p.forEach(([x, y], i) => pin(x, y, 'wp', editing ? `<span>${i + 1}</span>` : ''));
-  if (route.length < 2) return;
-  pin(g.p[0][0], g.p[0][1], 'tag', 'INICIO ' + hhmm(D.mission.t0));
-  const e = g.p[g.p.length - 1]; pin(e[0], e[1], 'tag', 'FIN ' + hhmm(D.mission.t1));
-  // momento más frío de la salida (según el modo de color)
-  let im = 0; for (let i = 1; i < D.pred.t.length; i++) if (metric(i) < metric(im)) im = i;
-  const c = posAt(g, clamp(fracOf(D.pred.t[im]), 0, 1));
-  pin(c[0], c[1], 'cold-dot'); pin(c[0], c[1], 'tag cold', `MÍN ${hhmm(D.pred.t[im])} · ${fmtC(metric(im))}`);
-  const a = posAt(g, f); pin(a[0], a[1], 'astro');
+  g.p.forEach((q, i) => L.marker(q, { icon: icon('wp', editing ? `<span>${i + 1}</span>` : ''), interactive: false }).addTo(pinLayer));
+  if (route.length < 2) { astro.remove(); return; }
+  L.marker(g.p[0], { icon: icon('tag', 'INICIO ' + hhmm(D.mission.t0)), interactive: false }).addTo(pinLayer);
+  L.marker(g.p[g.p.length - 1], { icon: icon('tag', 'FIN ' + hhmm(D.mission.t1)), interactive: false }).addTo(pinLayer);
+  if (view === 'term') {                 // momento más frío de la salida (según el modo de color)
+    let im = 0; for (let i = 1; i < D.pred.t.length; i++) if (metric(i) < metric(im)) im = i;
+    const c = posAt(g, clamp(fracOf(D.pred.t[im]), 0, 1));
+    L.marker(c, { icon: icon('cold-dot'), interactive: false }).addTo(pinLayer);
+    L.marker(c, { icon: icon('tag cold', `MÍN ${hhmm(D.pred.t[im])} · ${fmtC(metric(im))}`), interactive: false }).addTo(pinLayer);
+  }
+  astro.addTo(map); moveAstro(g);
 }
-function apply() { world.style.transform = `translate(${tx}px,${ty}px) scale(${s})`; drawPins(); }
+function moveAstro(g = geom()) { if (route.length > 1) astro.setLatLng(posAt(g, f)); }
 function fit() {
+  if (route.length < 2) { map.setView(A.CENTER, A.ZOOM); return; }
   const narrow = innerWidth <= 900;
-  const vw = narrow ? innerWidth : innerWidth - 420, vh = narrow ? innerHeight * 0.54 : innerHeight;
-  s = Math.min(vw / W, vh / H) * 0.94; tx = (vw - W * s) / 2; ty = (vh - H * s) / 2; apply();
+  map.fitBounds(L.latLngBounds(route), { paddingTopLeft: [30, 90],
+    paddingBottomRight: narrow ? [30, innerHeight * 0.46 + 110] : [440, 100] });
 }
 
 /* ---------- panel ---------- */
@@ -284,13 +323,19 @@ function update() {
   $('conf').textContent = r.sd < 2 ? `ALTA  ±${r.sd.toFixed(1)} K` : r.sd < 5 ? `MEDIA  ±${r.sd.toFixed(1)} K` : `BAJA  ±${r.sd.toFixed(1)} K — pocos datos`;
   $('state').textContent = b.nombre; $('state').style.background = b.color;
   $('advice').textContent = b.consejo;
-  if (CONFIG.metrosPorPixel && route.length > 1) {
-    const L = geom().L * CONFIG.metrosPorPixel;
-    $('distRow').hidden = false; $('dist').textContent = `${(f * L / 1000).toFixed(2)} de ${(L / 1000).toFixed(2)} km`;
-  }
+  const g = geom();
+  $('distRow').hidden = route.length < 2;
+  if (route.length > 1) {
+    $('dist').textContent = `${fmtKm(f * g.L)} de ${fmtKm(g.L)}`;
+    const q = posAt(g, f);
+    $('gPos').textContent = fmtLL(q[0], q[1]); $('gDist').textContent = fmtKm(f * g.L);
+  } else { $('gPos').textContent = $('gDist').textContent = '--'; }
+  $('gLen').textContent = route.length > 1 ? fmtKm(g.L) : '--';
+  $('gWp').textContent = route.length;
+  $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(r.t)} LTST`;
   const cb = $('chart').querySelector('canvas');
   if (cb) { const w = cb.clientWidth; Object.assign($('cursor').style, { left: (70 + f * (w - 96)) + 'px', height: (cb.clientHeight - 96) + 'px' }); }
-  drawPins();
+  moveAstro(g);
 }
 function drawChart() { GPChart.draw($('chart'), D, { height: 230 }); update(); }
 function legend() {
@@ -301,38 +346,47 @@ function legend() {
 }
 
 /* ---------- interacción ---------- */
-let drag = null;
-map.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, tx, ty, moved: false }; map.setPointerCapture(e.pointerId); });
-map.addEventListener('pointermove', (e) => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-  if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; map.classList.add('dragging'); }
-  if (drag.moved) { tx = drag.tx + dx; ty = drag.ty + dy; apply(); }
+map.on('click', (e) => {
+  if (!editing) return;
+  route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); save(route); redraw();
 });
-map.addEventListener('pointerup', (e) => {
-  if (drag && !drag.moved && editing) {
-    const x = clamp((e.clientX - tx) / s / W, 0, 1), y = clamp((e.clientY - ty) / s / H, 0, 1);
-    route.push([+x.toFixed(4), +y.toFixed(4)]); save(route); drawRoute(); update();
-  }
-  drag = null; map.classList.remove('dragging');
-});
-map.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const ns = clamp(s * Math.exp(-e.deltaY * 0.0015), 0.05, 20), wx = (e.clientX - tx) / s, wy = (e.clientY - ty) / s;
-  s = ns; tx = e.clientX - wx * s; ty = e.clientY - wy * s; apply();
-}, { passive: false });
+map.on('mousemove', (e) => { $('gCur').textContent = fmtLL(e.latlng.lat, e.latlng.lng); });
+function redraw() { drawRoute(); drawPins(); update(); }
 
 function relabel(btn, txt) { btn.dataset.label = txt; btn.textContent = txt; PxButton.render(btn); }
 $('edit').onclick = () => {
-  editing = !editing; map.classList.toggle('edit', editing);
+  editing = !editing; $('map').classList.toggle('edit', editing);
   relabel($('edit'), editing ? 'LISTO' : 'EDITAR RUTA');
   $('undo').hidden = $('clear').hidden = !editing;
   if (editing) { PxButton.render($('undo')); PxButton.render($('clear')); }
   drawPins();
 };
-$('undo').onclick = () => { route.pop(); save(route); drawRoute(); update(); };
-$('clear').onclick = () => { route = []; save(route); drawRoute(); update(); };
-$('mode').onclick = () => { worstMode = !worstMode; relabel($('mode'), worstMode ? 'COLOR: PEOR CASO' : 'COLOR: MEDIA'); drawRoute(); update(); };
+$('undo').onclick = () => { route.pop(); save(route); redraw(); };
+$('clear').onclick = () => { route = []; save(route); redraw(); };
+$('mode').onclick = () => { worstMode = !worstMode; relabel($('mode'), worstMode ? 'COLOR: PEOR CASO' : 'COLOR: MEDIA'); redraw(); };
+
+/* ---------- pestañas TÉRMICO / GEOTOPOLÓGICO y capa base ---------- */
+function setBase(k) {
+  baseKey = k; map.removeLayer(baseLayers.imagen); map.removeLayer(baseLayers.relieve);
+  baseLayers[k].addTo(map);
+  if (view === 'geo' && k === 'imagen') reliefOver.addTo(map); else map.removeLayer(reliefOver);
+  $('opBox').hidden = !(view === 'geo' && k === 'imagen');
+  relabel($('base'), k === 'imagen' ? 'BASE: IMAGEN' : 'BASE: RELIEVE');
+}
+function setView(v) {
+  view = v;
+  const tab = (b, on) => { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); };
+  tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo');
+  document.querySelectorAll('[data-view]').forEach((e) => { e.hidden = e.dataset.view !== v; });
+  $('mode').hidden = v !== 'term';
+  try { history.replaceState(null, '', v === 'geo' ? '#geo' : '#termico'); } catch (e) {}
+  setBase(baseKey); redraw();
+  if (v === 'term') drawChart();
+}
+$('tabTerm').onclick = () => setView('term');
+$('tabGeo').onclick = () => setView('geo');
+$('base').onclick = () => setBase(baseKey === 'imagen' ? 'relieve' : 'imagen');
+$('op').oninput = (e) => reliefOver.setOpacity(e.target.value / 100);
 $('fit').onclick = fit;
 $('back').onclick = () => history.back();
 $('time').oninput = (e) => { f = e.target.value / 1000; update(); };
@@ -356,22 +410,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (!D) { try { D = await (await fetch('data/gp.json')).json(); } catch (e) {} }
   if (!D || !D.pred || !D.pred.t || !D.pred.t.length) { D = demoData(); $('demo').hidden = false; }
   legend();
+  $('credits').textContent = A.CREDITS + (A.OFFLINE ? ' · teselas offline (ui/tiles)' : '');
+  fit();
+  setView(location.hash === '#geo' ? 'geo' : 'term');
 
-  const img = $('sat');
-  const start = () => { drawRoute(); fit(); drawChart(); };
-  img.onload = () => { W = img.naturalWidth; H = img.naturalHeight; start(); };
-  img.onerror = () => {      // sin imagen: lienzo de relleno con instrucciones
-    img.remove(); W = 1600; H = 1000;
-    world.style.width = W + 'px'; world.style.height = H + 'px';
-    world.style.background = 'repeating-linear-gradient(45deg,#0a1a33 0 24px,#0c203f 24px 48px)';
-    const t = document.createElement('div');
-    Object.assign(t.style, { position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', font: '44px var(--px-font)', color: '#51b4f5' });
-    t.textContent = 'COLOCA TU IMAGEN SATELITAL EN ui/' + CONFIG.imagen;
-    world.insertBefore(t, svg); start();
-  };
-  img.src = CONFIG.imagen;
-
-  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { fit(); drawChart(); }, 120); });
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { map.invalidateSize(); if (view === 'term') drawChart(); }, 120); });
 });
 </script>
 </body>

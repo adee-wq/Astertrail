@@ -19,7 +19,7 @@
 - Imagen: WMTS Mars Trek `https://trek.nasa.gov/tiles/Mars/EQ/{CAPA}/1.0.0/default/default028mm/{z}/{y}/{x}.jpg`.
 - Elevación: DEM MSL Gale Merged 1 m (USGS) `https://planetarymaps.usgs.gov/mosaic/Mars/MSL/MSL_Gale_DEM_Mosaic_1m_v3.tif` (solo ventana). Respaldo HRSC 30 m (Zenodo 5808354) o MOLA.
 - Leaflet en `ui/vendor/` (no CDN). Distancias geodésicas, R Marte 3389.5 km.
-- Menú: `MAPA · TÉRMICO` (activo), `MAPA · GEOTOPOLÓGICO — PRÓXIMAMENTE` (deshabilitado).
+- ~~Menú: GEOTOPOLÓGICO deshabilitado~~ → **Cambio (Alan): TÉRMICO y GEOTOPOLÓGICO son pestañas de una sola `mapa.html`** (`#termico` / `#geo`). GEOTOPOLÓGICO crece por iteraciones (DEM → elevación, pendiente, perfil).
 
 ## BLOQUE A · Datos reales listos (09:50 – 10:55)
 - [x] A1 · Humo y datos de temperatura — P0 · 10 min
@@ -28,7 +28,7 @@
 
 ## BLOQUE B · Herramienta funcional (10:55 – 13:00) — MVP
 - [ ] B1 · Menú (`ui/index.html`) — P0 · 15 min
-- [ ] B2 · Migrar `mapa.html` a Leaflet con coordenadas reales — P0 · 30 min
+- [x] B2 · Migrar `mapa.html` a Leaflet con coordenadas reales — P0 · 30 min (+ pestañas TÉRMICO/GEOTOPOLÓGICO en una sola interfaz)
 - [ ] B3 · Motor de energía (`ui/sim.js`) — P0 · 30 min
 - [ ] B4 · Perfil de la ruta — P0 · 20 min
 - [ ] B5 · Vista del astronauta + velocidad de simulación — P0 · 20 min
@@ -55,3 +55,4 @@ Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
 |---|---|---|---|
 | A1 | humo + GP | `export_gp.py --sol 1520 --ltst 9 --hours 6` OK (REMS real, 500 pts, 1.2 s, T 234.9–256.0 K, σ media 2.64 K, 197 ocultos). `datos.html` sin errores. Fuente Jersey 10 local en `ui/fonts/`. | Único error de consola: `mapa.jpg` no existe en `mapa.html` (se elimina en B2). El script vive en `scripts/`: correr con `PYTHONPATH=src/model_marte`. |
 | A2 | Leaflet + Mars Trek | Leaflet 1.9.4 en `ui/vendor/leaflet/`. `ui/layers.js`: IMAGEN = CTX Gale (z12, ~10 m) + HiRISE Curiosity encima (z16, ~0.6 m); RELIEVE = MOLA+HRSC sombreado color (z8). Rejilla EQ = `L.CRS.EPSG4326` con R de Marte (escala en m reales). `scripts/cache_tiles.py` bajó 1113 teselas (50 MB) a `ui/tiles/`; `?offline=1` probado sin red. | Hubo que crear el entorno de red `astertrail` (trek.nasa.gov, planetarymaps.usgs.gov, astrogeology.usgs.gov, zenodo.org). HiRISE solo cubre 137.12–137.73 E, 4.25–4.93 S: la ruta demo debe quedar dentro. |
+| B2 | mapa unificado | `mapa.html` sobre Leaflet + Mars Trek, ruta en [lat,lon] (clave `astertrail.ruta.geo`), distancias geodésicas, PLAY/barra/MÍN/bandas conservados. Pestañas TÉRMICO (ruta por temperatura) y GEOTOPOLÓGICO (ruta neutra, relieve MOLA semitransparente con opacidad, panel de terreno). `BASE: IMAGEN/RELIEVE`. `_tiles.html` eliminado. | Elevación/pendiente en GEO quedan "PRÓXIMAMENTE" hasta A3. Ruta demo 3.53 km dentro de HiRISE; se reajusta con el DEM. Pendiente: etiquetas del eje X de la gráfica GP se encimen en el panel estrecho (B4). |
