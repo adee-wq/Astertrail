@@ -7,6 +7,7 @@
  * Reglas de la spec: solo LEE los datos compartidos (DEM, GP, capas); su ruta, resultados y progreso
  * viven en su propio estado (localStorage 'marswalk.trace.v1'). Lógica pura en terrain.js, rss.js,
  * missions.js, gamification.js; motor del rover: sim.js (compartido, sin modificarlo).
+ * OPTIMIZAR RUTA: A* sobre el DEM (route-opt.js, puro) con base y objetivo de la misión, ida y vuelta.
  */
 (function () {
   const STORE = 'marswalk.trace.v1', SPEEDS = [60, 300, 1000], SOL_S = 88775.244;
@@ -26,6 +27,7 @@
     <button class="px-btn" data-size="sm" id="tr-close">VOLVER A BASE</button>
     <button class="px-btn" data-size="sm" id="tr-clear">BORRAR</button>
     <button class="px-btn" data-size="sm" id="tr-fit">CENTRAR</button>
+    <button class="px-btn" data-size="sm" id="tr-opt">OPTIMIZAR RUTA</button>
     <span class="hint" id="tr-hint" hidden></span>
   </div>
   <aside>
@@ -37,6 +39,7 @@
       <div class="px-panel__head"><span class="px-label" data-size="sm" data-color="#e8f4ff">ROUTE SAFETY SCORE</span></div>
       <div class="rss"><span class="n" id="tr-rssN">--</span><span class="c" id="tr-rssC">--</span></div>
       <div id="tr-msgs"></div>
+      <div id="tr-optBox"></div>
       <div class="btns"><button class="px-btn" data-size="md" data-variant="danger" id="tr-launch">LANZAR ROVER</button></div>
       <div class="row"><span class="k">distancia</span><b id="tr-eDist">--</b></div>
       <div class="row"><span class="k">duración estimada</span><b id="tr-eDur">--</b></div>
@@ -107,6 +110,7 @@
         L.marker(M.inicio, { icon: icon('tag', 'BASE'), interactive: false }),
       ]).addTo(map);
       this.segLayer = L.layerGroup().addTo(map); this.wpLayer = L.layerGroup().addTo(map); this.runLayer = L.layerGroup().addTo(map);
+      this.optLayer = L.layerGroup().addTo(map); this.opt = null;
       this.rover = L.marker(M.inicio, { icon: icon('trrover'), interactive: false, zIndexOffset: 2000 });
       // eventos
       this.onClick = (e) => { if (!this.editing || this.running) return; this.route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); this.changed(); };
@@ -118,6 +122,7 @@
       $('clear').onclick = () => { if (this.running) return; this.route = [M.inicio.slice()]; this.runLayer.clearLayers(); this.rover.remove(); this.changed(); };
       $('fit').onclick = () => this.fit();
       $('launch').onclick = () => this.launch();
+      $('opt').onclick = () => this.optimize();
       $('pause').onclick = () => { if (!this.running) return; this.running.paused = !this.running.paused; this.relabel($('pause'), this.running.paused ? 'SEGUIR SIM' : 'PAUSA'); };
       $('speed').onclick = () => { this.speedI = (this.speedI + 1) % SPEEDS.length; this.relabel($('speed'), 'x' + SPEEDS[this.speedI]); };
       $('follow').onclick = () => { this.follow = !this.follow; this.relabel($('follow'), this.follow ? 'VISTA GENERAL' : 'SEGUIR'); if (this.follow) map.setZoom(16); else this.fit(); };
@@ -130,7 +135,7 @@
     deactivate() {
       if (!this.root) return;
       this.running = null; this.map.off('click', this.onClick); this.map.doubleClickZoom.enable();
-      [this.fixed, this.segLayer, this.wpLayer, this.runLayer, this.rover].forEach((l) => l && this.map.removeLayer(l));
+      [this.fixed, this.segLayer, this.wpLayer, this.runLayer, this.optLayer, this.rover].forEach((l) => l && this.map.removeLayer(l));
       document.getElementById('map').classList.remove('tredit');
       this.root.remove(); this.root = null;
     }
@@ -143,7 +148,37 @@
       this.ev = this.sim && this.ter ? TraceRSS.evaluate({ route: this.route, sim: this.sim, terrain: this.ter }) : null;
       this.chk = TraceMissions.check(this.M, this.route, this.sim, this.ev);
     }
-    changed() { this.saveRoute(); this.evaluate(); this.drawRoute(); this.panel(); this.progressPanel(); }
+    // Ruta óptima (A* sobre el DEM, costo = tiempo con la física de sim.js + rugosidad): base -> objetivo -> base
+    optimize() {
+      if (this.running || !window.RouteOpt || !this.dem) return;
+      const { M, L } = this, box = this.$('optBox');
+      const args = { sim: SIM, dem: this.dem, terrain: this.ter, from: M.inicio, to: M.objetivo.pos, goalRadius: M.objetivo.radio * 0.5, vehicle: { soc_min: M.soc_min } };
+      if (this.optRes) args.res = this.optRes;
+      const r = RouteOpt.roundTrip(args);
+      this.optLayer.clearLayers(); this.opt = null;
+      if (!r) { box.innerHTML = '<div class="msg">OPTIMIZAR: no hay ruta transitable entre la base y el objetivo.</div>'; return; }
+      if (r.ms > 3000) this.optRes = 20;            // demasiado lento en esta máquina: la próxima vez, rejilla de 20 m
+      const sim = SIM.simulate({ route: r.route, dem: this.dem, gp: this.gp, t0: this.t0v, vehicle: { soc_min: M.soc_min } });
+      const ev = this.ter ? TraceRSS.evaluate({ route: r.route, sim, terrain: this.ter }) : null;
+      this.opt = { route: r.route, sim, ev, ms: r.ms, res: r.res };
+      L.polyline(r.route, { color: '#041734', weight: 9, interactive: false }).addTo(this.optLayer);
+      L.polyline(r.route, { color: '#51e0ff', weight: 4, dashArray: '10 8', interactive: false }).addTo(this.optLayer);
+      L.marker(r.route[Math.floor(r.ida.route.length / 2)], { icon: this.icon('tag', 'ÓPTIMA'), interactive: false }).addTo(this.optLayer);
+      this.optPanel();
+    }
+    optPanel() {                                    // "tu ruta: RSS A · óptima: RSS B, Δ min" (se recalcula si cambias tu ruta)
+      const box = this.$('optBox'), o = this.opt; if (!box) return; if (!o) { box.innerHTML = ''; return; }
+      const mine = this.ev && this.chk && !this.chk.bloqueos.length ? this.sim.summary : null, S = o.sim.summary;
+      const dMin = mine ? (S.dur_s - mine.dur_s) / 60 : null;
+      box.innerHTML = `<div class="msg ok">tu ruta: ${this.ev ? 'RSS ' + this.ev.rss + (mine ? '' : ' (no válida)') : 'sin trazar'} · óptima: RSS ${o.ev ? o.ev.rss : '--'}` +
+        `${dMin == null ? '' : `, ${dMin <= 0 ? '−' : '+'}${Math.abs(dMin).toFixed(0)} min`}<br>` +
+        `Óptima: ${fmtKm(S.dist_m)} · ${fmtMin(S.dur_s)} · batería ${(S.SOC_end * 100).toFixed(0)} % · pend. máx ${S.theta_max_ruta.toFixed(0)}°. ` +
+        `A* sobre el DEM USGS (rejilla ${o.res} m, ${o.ms.toFixed(0)} ms): minimiza el tiempo del rover, evita > ${o.sim.vehicle.theta_max}° y penaliza la rugosidad.</div>` +
+        `<div class="btns"><button class="px-btn" data-size="sm" id="tr-useOpt">USAR ÓPTIMA</button></div>`;
+      const b = this.$('useOpt'); if (window.PxButton) PxButton.render(b);
+      b.onclick = () => { if (this.running || !this.opt) return; this.route = this.opt.route.map((p) => p.slice()); this.optLayer.clearLayers(); this.changed(); };
+    }
+    changed() { this.saveRoute(); this.evaluate(); this.drawRoute(); this.panel(); this.progressPanel(); this.optPanel(); }
     drawRoute() {
       const { L, route, ev } = this; this.segLayer.clearLayers(); this.wpLayer.clearLayers();
       document.getElementById('map').classList.toggle('tredit', this.editing && !this.running);
