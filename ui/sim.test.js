@@ -65,4 +65,29 @@ t('momento correcto: elige la salida más templada', () => {
   assert.strictEqual(sc.best.t0, 1520.48);
 });
 
+t('paradas científicas: suman tiempo y energía (térmica + aux), no conducción', () => {
+  const [lat, lon] = P(500, 40);                                   // a 40 m de la ruta, a mitad de camino
+  const stops = [{ id: 'a', nombre: 'A', lat, lon, radio: 150, stop_s: 1800 }];
+  const a = run(recta, plane(0)), b = SIM.simulate({ route: recta, dem: plane(0), gp, t0: 1520.375, stops });
+  assert.strictEqual(a.summary.stop_s, 0); assert.strictEqual(a.summary.stops.length, 0);
+  assert.strictEqual(b.summary.stops.length, 1);
+  assert(Math.abs(b.summary.drive_s - a.summary.drive_s) < 1e-9, 'la conducción no cambia');
+  assert(Math.abs(b.summary.dur_s - (a.summary.dur_s + 1800)) < 1e-6, 'duración = conducción × Ct + parada');
+  assert(Math.abs((b.summary.t1 - b.summary.t0) * 88775.244 - b.summary.dur_s) < 1e-3, 't1 incluye la parada');
+  const V = SIM.VEHICULO, Pst = V.P_base + V.k_term * (V.T_ref - (240 - 1.96 * 2)) + V.P_aux;   // W parado
+  assert(Math.abs(b.summary.E_Wh - a.summary.E_Wh - Pst * 0.5) < 1e-6, 'energía de la parada = (térmica + aux) × 0.5 h');
+  const st = b.summary.stops[0];
+  assert(Math.abs(st.dist - 500) <= 5 && Math.abs(st.off_m - 40) < 1, 'parada en la muestra más cercana');
+  assert(Math.abs((st.t_dep - st.t_arr) * 88775.244 - 1800) < 1e-3);
+  const fin = b.s[b.s.length - 1], finA = a.s[a.s.length - 1];
+  assert(Math.abs((fin.t - finA.t) * 88775.244 - 1800) < 1e-3, 'las muestras posteriores llegan 30 min más tarde');
+});
+
+t('paradas científicas: un punto lejos de la ruta no cuenta', () => {
+  const [lat, lon] = P(500, 400);
+  const a = run(recta, plane(0)), b = SIM.simulate({ route: recta, dem: plane(0), gp, t0: 1520.375, stops: [{ id: 'x', lat, lon, radio: 150, stop_s: 1800 }] });
+  assert.strictEqual(b.summary.stops.length, 0);
+  assert.strictEqual(b.summary.dur_s, a.summary.dur_s); assert.strictEqual(b.summary.E_Wh, a.summary.E_Wh);
+});
+
 console.log(`\n${ok} pruebas OK`);

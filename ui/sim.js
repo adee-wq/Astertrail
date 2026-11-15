@@ -14,6 +14,8 @@
  *   P_term = P_base + k·max(0, T_ref − T_peor)   con T_peor = μ − 1.96σ del GP a la HORA DE PASO
  *   Ct: el tiempo real es Ct × tiempo de conducción (paradas, maniobras, navegación, terreno que el DEM no ve).
  *       Durante ese tiempo extra no hay tracción, pero sí térmica y auxiliares.
+ *   Paradas científicas (stops, opcional): si la ruta pasa a ≤ radio m de un punto, el reloj suma stop_s en la muestra
+ *       más cercana (una vez por punto; no se multiplica por Ct). Parado no hay tracción, pero sí térmica y auxiliares.
  *   SOC = 1 − E/E_bat
  */
 (function () {
@@ -80,7 +82,7 @@
   }
 
   /* ---------- simulación ---------- */
-  function simulate({ route, dem, gp, t0, vehicle }) {
+  function simulate({ route, dem, gp, t0, vehicle, stops }) {
     const V = Object.assign({}, VEHICULO, vehicle || {});
     if (!route || route.length < 2) return null;
     const s = resample(route, V.ds), n = s.length;
@@ -136,7 +138,15 @@
     for (let i = n - 2; i >= 0; i--) { const d = s[i + 1].dist - s[i].dist; s[i].v = Math.min(s[i].v, Math.sqrt(s[i + 1].v ** 2 + 2 * V.a_lon * d)); }
 
     // reloj, temperatura a la hora de paso, potencia y energía
-    let tDrive = 0, E = 0, noGp = 0, Tmin = null, tTmin = null;
+    // paradas científicas: cada punto se asigna a la muestra más cercana de la ruta, si está dentro de su radio
+    const stopAt = {}, stopList = [];
+    (stops || []).forEach((st) => {
+      if (!(st.stop_s > 0)) return;
+      let bi = -1, bd = Infinity;
+      for (let i = 0; i < n; i++) { const d = dist([s[i].lat, s[i].lon], [st.lat, st.lon]); if (d < bd) { bd = d; bi = i; } }
+      if (bi >= 0 && bd <= (st.radio ?? 150)) (stopAt[bi] || (stopAt[bi] = [])).push({ st, d: bd });
+    });
+    let tDrive = 0, tStop = 0, E = 0, noGp = 0, Tmin = null, tTmin = null;
     for (let i = 0; i < n; i++) {
       const p = s[i];
       if (i > 0) {
@@ -144,7 +154,7 @@
         p.dtDrive = d / vm; tDrive += p.dtDrive;
       } else p.dtDrive = 0;
       p.tDrive = tDrive;                                   // s de conducción pura
-      p.t = t0 + V.Ct * tDrive / 88775.244;                // sols (1 sol = 88 775.244 s); hora real con Ct
+      p.t = t0 + (V.Ct * tDrive + tStop) / 88775.244;      // sols (1 sol = 88 775.244 s); hora real con Ct + paradas previas
       const T = gpAt(gp, p.t);
       if (!T) { noGp++; p.T = p.Tlo = p.sd = null; } else { p.T = T.mu; p.Tlo = T.lo; p.sd = T.sd; if (Tmin == null || T.lo < Tmin) { Tmin = T.lo; tTmin = p.t; } }
       const Tw = p.Tlo ?? V.T_ref;
@@ -155,19 +165,32 @@
         const Pt = (p.P_trac + s[i - 1].P_trac) / 2;
         E += (Pt * p.dtDrive + (p.P_term + V.P_aux) * V.Ct * p.dtDrive) / 3600;
       }
-      p.E = E; p.SOC = 1 - E / V.E_bat;
+      p.E = E; p.SOC = 1 - E / V.E_bat;                    // estado AL LLEGAR a la muestra (antes de parar)
+      for (const { st, d } of (stopAt[i] || [])) {         // parada: sin tracción; térmica + aux en pasos de ≤ 5 min
+        let rem = st.stop_s, tt = p.t + (tStop - (p.stopBefore ?? (p.stopBefore = tStop))) / 88775.244, lo = null, sinGp = false;
+        const t_arr = tt;
+        while (rem > 1e-9) {
+          const h = Math.min(300, rem), tm = tt + h / 2 / 88775.244, Tm = gpAt(gp, tm);
+          if (Tm) { if (lo == null || Tm.lo < lo) lo = Tm.lo; if (Tmin == null || Tm.lo < Tmin) { Tmin = Tm.lo; tTmin = tm; } } else sinGp = true;
+          E += (V.P_base + V.k_term * Math.max(0, V.T_ref - (Tm ? Tm.lo : V.T_ref)) + V.P_aux) * h / 3600;
+          rem -= h; tt += h / 88775.244;
+        }
+        if (sinGp) noGp++;
+        tStop += st.stop_s; p.stop_s = (p.stop_s || 0) + st.stop_s;
+        stopList.push({ id: st.id, nombre: st.nombre, lat: st.lat, lon: st.lon, i, dist: p.dist, off_m: d, stop_s: st.stop_s, t_arr, t_dep: tt, Tlo_min: lo, SOC_dep: 1 - E / V.E_bat });
+      }
     }
 
-    const L = s[n - 1].dist, dur = V.Ct * tDrive;
+    const L = s[n - 1].dist, dur = V.Ct * tDrive + tStop;
     let blockedM = 0, up = 0, dn = 0;
     for (let i = 1; i < n; i++) {
       const d = s[i].dist - s[i - 1].dist, de = s[i].elev - s[i - 1].elev;
       if (s[i].blocked) blockedM += d; if (de > 0) up += de; else dn -= de;
     }
     const summary = {
-      dist_m: L, drive_s: tDrive, dur_s: dur, Ct: V.Ct, t0, t1: s[n - 1].t,
+      dist_m: L, drive_s: tDrive, dur_s: dur, stop_s: tStop, stops: stopList, Ct: V.Ct, t0, t1: t0 + dur / 88775.244,
       v_media_kmh: L / tDrive * 3.6, v_media_real_kmh: L / dur * 3.6,
-      E_Wh: E, Wh_km: E / (L / 1000), SOC_end: s[n - 1].SOC,
+      E_Wh: E, Wh_km: E / (L / 1000), SOC_end: 1 - E / V.E_bat,
       Tlo_min: Tmin, t_Tlo_min: tTmin, desnivel_up: up, desnivel_dn: dn,
       blocked_m: blockedM, theta_max_ruta: Math.max(...s.map((p) => Math.abs(p.theta))) / RAD,
       sin_dem: noDem, sin_gp: noGp, n,
@@ -185,6 +208,7 @@
     if (S.sin_gp > 0) { level = 'NO-GO'; why.push('la misión sale del pronóstico de temperatura'); }
     let extremo = 0;
     for (let i = 1; i < r.s.length; i++) if (r.s[i].Tlo != null && r.s[i].Tlo < BANDAS[0]) extremo += r.s[i].dtDrive * V.Ct;
+    for (const st of (S.stops || [])) if (st.Tlo_min != null && st.Tlo_min < BANDAS[0]) extremo += st.stop_s;   // paradas en frío extremo
     if (level === 'GO' && extremo > (opts.max_extremo_s ?? 1800)) { level = 'GO CON PRECAUCIÓN'; why.push(`${(extremo / 60).toFixed(0)} min en FRÍO EXTREMO`); }
     if (level === 'GO' && S.SOC_end < V.soc_min + 0.15) { level = 'GO CON PRECAUCIÓN'; why.push(`reserva justa (${(S.SOC_end * 100).toFixed(0)} %)`); }
     return { level, why, extremo_s: extremo };

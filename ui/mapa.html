@@ -39,6 +39,24 @@
                   animation: ping 1.6s steps(6) infinite; }
   @keyframes ping { from { opacity: .9; inset: -6px; } to { opacity: 0; inset: -22px; } }
 
+  /* ---------- paradas científicas (POI) ---------- */
+  .poi { cursor: pointer; display: flex; align-items: center; gap: 8px; transform: translate(-9px, -50%); }
+  .poi i { flex: none; width: 12px; height: 12px; background: #ffd23f; transform: rotate(45deg); box-shadow: 0 0 0 2px var(--ast-abyss), 0 0 0 4px #ffd23f; }
+  .poi span { font-size: 17px; color: #fff3c4; background: rgba(4,23,52,.88); padding: 1px 7px; box-shadow: 0 0 0 2px #ffd23f; }
+  .poi.on span { color: var(--ast-abyss); background: #ffd23f; }
+  .poi:hover span { filter: brightness(1.2); }
+  #poiCard { position: fixed; left: 18px; top: var(--toph, 90px); width: min(430px, calc(100vw - 36px)); max-height: calc(100vh - var(--toph, 90px) - var(--dock-h) - 34px);
+             overflow-y: auto; z-index: 1100; margin: 0; }
+  #poiCard h3 { font: 26px var(--px-font); font-weight: normal; color: #ffd23f; margin: 0 0 6px; line-height: 1.1; }
+  #poiCard .txt { font-size: 19px; line-height: 1.2; color: #cfe6fa; margin: 2px 0 8px; }
+  #poiCard .k { font-size: 18px; }
+  #poiCard .onr { font-size: 19px; line-height: 1.2; padding: 5px 8px; margin: 6px 0; color: #fff3c4; box-shadow: inset 3px 0 0 #ffd23f; background: rgba(255,210,63,.12); }
+  #poiCard figure { margin: 8px 0; }
+  #poiCard figure img { display: block; width: 100%; image-rendering: auto; box-shadow: 0 0 0 2px var(--ast-navy); }
+  #poiCard figcaption { font-size: 16px; color: #7fa6cc; line-height: 1.2; margin-top: 4px; }
+  #poiCard .nofoto { aspect-ratio: 16 / 9; display: grid; place-items: center; text-align: center; padding: 10px; font-size: 18px; line-height: 1.2; color: #9fc8ea;
+                     background: repeating-linear-gradient(45deg, rgba(4,23,52,.9) 0 12px, rgba(12,40,80,.9) 12px 24px); box-shadow: 0 0 0 2px var(--ast-navy); }
+
   /* ---------- HUD ---------- */
   .top { position: fixed; top: 14px; left: 18px; right: var(--side); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; pointer-events: none; z-index: 800; }
   .top > * { pointer-events: auto; }
@@ -119,6 +137,7 @@
 <script src="dem.js"></script>
 <script src="data/dem.js"></script>
 <script src="sim.js"></script>
+<script src="data/poi.js"></script>
 <!-- módulos de Marswalk (el "backend": lógica pura + clases que se montan sobre este mapa) -->
 <script src="gp-chart.js" defer></script>
 <script src="modules/trace/i18n/es.js"></script>
@@ -172,6 +191,7 @@
       </div>
       <div class="row"><span class="k">distancia</span><b id="pDist">--</b></div>
       <div class="row"><span class="k">duración real</span><b id="pDur">--</b></div>
+      <div class="row"><span class="k">paradas científicas</span><b id="pStops">--</b></div>
       <div class="row"><span class="k">velocidad media</span><b id="pV">--</b></div>
       <div class="row"><span class="k">energía (ESTIMADO)</span><b id="pE">--</b></div>
       <div class="row"><span class="k">batería al llegar</span><b id="pSoc">--</b></div>
@@ -233,6 +253,13 @@
     </section>
   </aside>
 
+  <!-- ficha de parada científica (clic en un marcador amarillo; TÉRMICO, GEOTOPOLÓGICO y TRACE) -->
+  <section class="px-panel" id="poiCard" hidden>
+    <button class="closex" id="poiClose">✕</button>
+    <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PARADA CIENTÍFICA</span></div>
+    <div id="poiBody"></div>
+  </section>
+
   <div class="charts" data-modes="term geo">
     <section class="px-panel cbox" data-sec="pron">
       <button class="closex" data-close>✕</button>
@@ -283,6 +310,7 @@ const STORE = 'astertrail.ruta.geo';
 const A = window.AST_LAYERS;
 const dem = window.DEM_DATA ? DEM.from(window.DEM_DATA) : null;
 const SOL_S = 88775.244;
+const POIS = window.POI_DATA ? POI_DATA.list : [], STOPS = window.POI_DATA ? POI_DATA.stops() : [];   // paradas científicas (data/poi.js)
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -322,21 +350,21 @@ const BASES = A.bases(L);
 const baseLayers = { imagen: BASES['IMAGEN · HiRISE/CTX'], relieve: BASES['RELIEVE · MOLA/HRSC'] };
 const reliefOver = A.tile(L, 'relieve', { opacity: 0.6, zIndex: 5 });
 baseLayers.imagen.addTo(map);
-const routeLayer = L.layerGroup().addTo(map), pinLayer = L.layerGroup().addTo(map);
+const routeLayer = L.layerGroup().addTo(map), pinLayer = L.layerGroup().addTo(map), poiLayer = L.layerGroup().addTo(map);
 const icon = (cls, html = '') => L.divIcon({ className: 'pw', iconSize: [0, 0], html: `<div class="pin ${cls}">${html}</div>` });
 const astro = L.marker(A.CENTER, { icon: icon('astro'), interactive: false, zIndexOffset: 1000 });
 
 /* ---------- simulación ---------- */
 function forecast() { const P = D.pred; return [P.t[0], P.t[P.t.length - 1]]; }
 function resim() {
-  R = route.length > 1 ? SIM.simulate({ route, dem, gp: D, t0: tDep }) : null;
+  R = route.length > 1 ? SIM.simulate({ route, dem, gp: D, t0: tDep, stops: STOPS }) : null;
   V = R ? SIM.verdict(R) : null;
 }
 function rescan() {
   if (route.length < 2) { scan = null; return; }
   const [a, b] = forecast(), st = CONFIG.pasoSalida / 1440, ts = [];
   for (let t = a; t <= b; t += st) ts.push(+t.toFixed(6));
-  scan = SIM.scanDepartures({ route, dem, gp: D }, ts);
+  scan = SIM.scanDepartures({ route, dem, gp: D, stops: STOPS }, ts);
   scan.step = st;
 }
 function sampleAt(u) {                    // estado interpolado en la fracción u del tiempo de la travesía
@@ -381,13 +409,58 @@ function drawPins() {
   L.marker(route[0], { icon: icon('tag', 'SALIDA ' + hhmm(S.t0)), interactive: false }).addTo(pinLayer);
   L.marker(route[route.length - 1], { icon: icon('tag', 'LLEGADA ' + hhmm(S.t1)), interactive: false }).addTo(pinLayer);
   if (view === 'term' && S.Tlo_min != null) {
-    const p = s.find((q) => q.t === S.t_Tlo_min) || s[0];
+    const p = s.reduce((a, q) => Math.abs(q.t - S.t_Tlo_min) < Math.abs(a.t - S.t_Tlo_min) ? q : a, s[0]);   // (el mínimo puede caer durante una parada)
     L.marker([p.lat, p.lon], { icon: icon('cold-dot'), interactive: false }).addTo(pinLayer);
     L.marker([p.lat, p.lon], { icon: icon('tag cold', `MÍN ${hhmm(p.t)} · ${fmtC(S.Tlo_min)}`), interactive: false }).addTo(pinLayer);
   }
   const b = s.find((q) => q.blocked);
   if (b) L.marker([b.lat, b.lon], { icon: icon('tag bad', `> ${R.vehicle.theta_max}° INTRANSITABLE`), interactive: false }).addTo(pinLayer);
   astro.addTo(map); moveAstro();
+}
+/* ---------- paradas científicas: marcadores + ficha ---------- */
+let poiOpen = null;
+const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const stopOf = (id) => (view === 'term' || view === 'geo') && R ? R.summary.stops.find((x) => x.id === id) : null;
+function drawPoi() {
+  poiLayer.clearLayers();
+  POIS.forEach((p) => { const st = stopOf(p.id);
+    L.marker([p.lat, p.lon], { icon: icon('poi' + (st ? ' on' : ''), `<i></i><span>${esc(p.corto)}${st ? ` · ${hhmm(st.t_arr)} · ${p.stop_min} min` : ''}</span>`), zIndexOffset: 500, title: p.nombre })
+      .on('click', () => showPoi(p.id)).addTo(poiLayer); });
+  if (poiOpen) showPoi(poiOpen);
+}
+function showPoi(id) {
+  const p = POI_DATA.get(id); if (!p) return; poiOpen = id;
+  const st = stopOf(id), own = view === 'term' || view === 'geo';
+  let onr = '';
+  if (st) onr = `EN TU RUTA (a ${st.off_m.toFixed(0)} m, km ${(st.dist / 1000).toFixed(2)}): llegas ${hhmm(st.t_arr)}, sales ${hhmm(st.t_dep)}. Suma ${p.stop_min} min a la duración.`;
+  else if (own && R) { const d = Math.min(...R.s.map((q) => SIM.dist([q.lat, q.lon], [p.lat, p.lon])));
+    onr = `A ${fmtKm(d)} de tu ruta: no cuenta como parada (hay que pasar a ≤ ${p.radio} m).`; }
+  else if (!own) onr = `Parada estimada: ${p.stop_min} min. En TRACE es informativa (no cambia la simulación de la misión).`;
+  const foto = p.foto
+    ? `<img src="${esc(p.foto)}" alt="${esc(p.nombre)}" onerror="this.outerHTML='<div class=&quot;nofoto&quot;>FOTO NO ENCONTRADA<br>${esc(p.foto)}</div>'">`
+    : `<div class="nofoto">FOTO PENDIENTE<br>(sin acceso a mars.nasa.gov al generar los datos)<br>Sugerida: ${esc(p.fotoSugerida || '--')}</div>`;
+  $('poiBody').innerHTML = `<h3>${esc(p.nombre)}</h3>
+    <div class="row"><span class="k">posición</span><b>${fmtLL(p.lat, p.lon)}</b></div>
+    <div class="row"><span class="k">elev. / pendiente</span><b>${fmtE(p.lat, p.lon)}</b></div>
+    <div class="row"><span class="k">parada estimada</span><b>${p.stop_min} min (ESTIMADO)</b></div>
+    ${onr ? `<div class="onr">${onr}</div>` : ''}
+    ${own && !st ? '<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" id="poiAdd">PASAR POR AQUÍ</button></div>' : ''}
+    <div class="k">OBJETIVO CIENTÍFICO</div><p class="txt">${esc(p.objetivo)}</p>
+    <div class="k">QUÉ MEDIR / MUESTREAR</div><p class="txt">${esc(p.medir)}</p>
+    <div class="k">LO QUE VERÁS AL LLEGAR</div>
+    <figure>${foto}<figcaption>${p.foto ? 'Imagen: ' + esc(p.fotoCredito || 'NASA/JPL-Caltech') : ''}</figcaption></figure>
+    <div class="note">Fuente: ${esc(p.fuente)}</div>
+    <div class="note">Coordenadas: ${esc(p.precision)}. VERIFICAR.</div>`;
+  const add = $('poiAdd'); if (add) { add.onclick = () => poiToRoute(p); if (window.PxButton) PxButton.render(add); }
+  $('poiCard').hidden = false;
+}
+function hidePoi() { poiOpen = null; $('poiCard').hidden = true; }
+function poiToRoute(p) {                  // inserta el punto en la ruta donde menos distancia añade
+  const q = [p.lat, p.lon]; let bi = route.length, bc = Infinity;
+  for (let i = 0; i <= route.length; i++) { const a = route[i - 1], b = route[i];
+    const c = (a ? SIM.dist(a, q) : 0) + (b ? SIM.dist(q, b) : 0) - (a && b ? SIM.dist(a, b) : 0);
+    if (c < bc) { bc = c; bi = i; } }
+  route.splice(bi, 0, q); routeChanged();
 }
 function moveAstro() { if (R) { const q = sampleAt(f); astro.setLatLng([q.lat, q.lon]); } }
 function fit() {
@@ -439,14 +512,15 @@ function drawCharts() {
 
 /* ---------- paneles ---------- */
 function plan() {
-  if (!R) { ['pRec', 'pDist', 'pDur', 'pV', 'pE', 'pSoc', 'pTmin', 'pUp'].forEach((id) => { $(id).textContent = '--'; });
+  if (!R) { ['pRec', 'pDist', 'pDur', 'pV', 'pE', 'pSoc', 'pTmin', 'pUp'].forEach((id) => { $(id).textContent = '--'; }); $('pStops').textContent = '--';
     $('pState').textContent = 'TRAZA UNA RUTA'; $('pState').style.background = '#9fc8ea'; $('pWhy').textContent = ''; return; }
   const S = R.summary;
   $('pRec').innerHTML = `SAL <b>${solHh(S.t0)}</b><br>LLEGAS <b>${solHh(S.t1)}</b>`;
   $('pState').textContent = V.level; $('pState').style.background = VERD[V.level];
   $('pWhy').textContent = V.why.join(' · ');
   $('pDist').textContent = fmtKm(S.dist_m);
-  $('pDur').textContent = `${fmtMin(S.dur_s)}  (${fmtMin(S.drive_s)} × Ct ${S.Ct})`;
+  $('pDur').textContent = `${fmtMin(S.dur_s)}  (${fmtMin(S.drive_s)} × Ct ${S.Ct}${S.stop_s ? ' + ' + fmtMin(S.stop_s) + ' paradas' : ''})`;
+  $('pStops').textContent = S.stops.length ? `${S.stops.length} · ${fmtMin(S.stop_s)}` : 'ninguna en ruta';
   $('pV').textContent = `${S.v_media_kmh.toFixed(1)} km/h · real ${S.v_media_real_kmh.toFixed(1)}`;
   $('pE').textContent = `${S.E_Wh.toFixed(0)} Wh · ${S.Wh_km.toFixed(0)} Wh/km`;
   $('pSoc').textContent = `${(S.SOC_end * 100).toFixed(0)} %`;
@@ -485,7 +559,7 @@ function update() {
   $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(q.t)} LTST`;
   moveAstro(); drawCharts();
 }
-function redraw() { resim(); drawRoute(); drawPins(); plan(); update(); statusStrip(); }
+function redraw() { resim(); drawRoute(); drawPins(); drawPoi(); plan(); update(); statusStrip(); }
 function routeChanged() { save(route); rescan(); redraw(); }
 function setDep(t) { const [a, b] = forecast(); tDep = clamp(+t.toFixed(6), a, b); f = 0; $('time').value = 0; redraw(); }
 
@@ -510,6 +584,7 @@ $('edit').onclick = () => {
 $('undo').onclick = () => { route.pop(); routeChanged(); };
 $('clear').onclick = () => { route = []; routeChanged(); };
 $('fit').onclick = fit;
+$('poiClose').onclick = hidePoi;
 // módulo Trace: solo le pasamos la hora actual de salida (lectura); el mapa no depende de él
 
 $('back').onclick = () => location.href = 'index.html' + (/[?&]offline=1\b/.test(location.search) ? '?offline=1' : '') + '#menu';   // [Marswalk] al menú, sin repetir el viaje
@@ -594,6 +669,7 @@ function setView(v) {
   document.querySelectorAll('[data-modes]').forEach((e) => { e.hidden = !e.dataset.modes.split(' ').includes(v); });
   try { history.replaceState(null, '', location.search + HASH[v]); } catch (e) {}
   topH();
+  if (v === 'datos') { map.removeLayer(poiLayer); hidePoi(); } else { poiLayer.addTo(map); drawPoi(); }   // paradas científicas: TÉRMICO, GEOTOPOLÓGICO y TRACE
   if (v === 'term' || v === 'geo') {
     ownLayers(true); setBase(baseKey); drawRoute(); drawPins(); buildSecs(v); statusStrip();
     if (prev === 'trace' || prev === 'datos') fit();
@@ -619,7 +695,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('credits').textContent = A.CREDITS + ' · Elevación: USGS Astrogeology (DEM MSL Gale 1 m) · Temperatura: MSL REMS (NASA/JPL-Caltech, CAB)' + (A.OFFLINE ? ' · teselas offline' : '');
   tDep = forecast()[0] + CONFIG.salidaInicial / 24;
   const step = (n, fn) => { try { fn(); } catch (e) { (window.MW_REPORT || console.error)(n, e); } };   // un paso que falle no detiene los demás
-  step('escaneo', rescan); step('simulación', resim); step('encuadre', fit);
+  step('escaneo', rescan); step('simulación', resim); step('encuadre', fit); step('paradas', drawPoi);
   step('módulos', () => {
     MODULES.trace = new TraceModule({ map, L, layers: A, dem, gp: D, t0: () => tDep, onExit: () => setView('term') });
     MODULES.datos = new DatosModule({ gp: D });
