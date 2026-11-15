@@ -23,7 +23,7 @@
 
 ## BLOQUE A · Datos reales listos (09:50 – 10:55)
 - [x] A1 · Humo y datos de temperatura — P0 · 10 min
-- [ ] A2 · Mapa base Mars Trek en Leaflet — P0 · 25 min
+- [x] A2 · Mapa base Mars Trek en Leaflet — P0 · 25 min
 - [ ] A3 · Elevación real de la zona — P0 · 30 min ⚠️
 
 ## BLOQUE B · Herramienta funcional (10:55 – 13:00) — MVP
@@ -54,3 +54,4 @@ Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
 | hora | iteración | quedó | recortado / notas |
 |---|---|---|---|
 | A1 | humo + GP | `export_gp.py --sol 1520 --ltst 9 --hours 6` OK (REMS real, 500 pts, 1.2 s, T 234.9–256.0 K, σ media 2.64 K, 197 ocultos). `datos.html` sin errores. Fuente Jersey 10 local en `ui/fonts/`. | Único error de consola: `mapa.jpg` no existe en `mapa.html` (se elimina en B2). El script vive en `scripts/`: correr con `PYTHONPATH=src/model_marte`. |
+| A2 | Leaflet + Mars Trek | Leaflet 1.9.4 en `ui/vendor/leaflet/`. `ui/layers.js`: IMAGEN = CTX Gale (z12, ~10 m) + HiRISE Curiosity encima (z16, ~0.6 m); RELIEVE = MOLA+HRSC sombreado color (z8). Rejilla EQ = `L.CRS.EPSG4326` con R de Marte (escala en m reales). `scripts/cache_tiles.py` bajó 1113 teselas (50 MB) a `ui/tiles/`; `?offline=1` probado sin red. | Hubo que crear el entorno de red `astertrail` (trek.nasa.gov, planetarymaps.usgs.gov, astrogeology.usgs.gov, zenodo.org). HiRISE solo cubre 137.12–137.73 E, 4.25–4.93 S: la ruta demo debe quedar dentro. |
