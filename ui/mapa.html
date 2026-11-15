@@ -47,6 +47,7 @@
   .poi:hover span { filter: brightness(1.2); }
   #poiCard { position: fixed; left: 18px; top: var(--toph, 90px); width: min(430px, calc(100vw - 36px)); max-height: calc(100vh - var(--toph, 90px) - var(--dock-h) - 34px);
              overflow-y: auto; z-index: 1100; margin: 0; }
+  body.v-trace #poiCard { top: calc(var(--toph, 90px) + 64px); max-height: calc(100vh - var(--toph, 90px) - var(--dock-h) - 98px); }
   #poiCard h3 { font: 26px var(--px-font); font-weight: normal; color: #ffd23f; margin: 0 0 6px; line-height: 1.1; }
   #poiCard .txt { font-size: 19px; line-height: 1.2; color: #cfe6fa; margin: 2px 0 8px; }
   #poiCard .k { font-size: 18px; }
@@ -138,6 +139,7 @@
 <script src="data/dem.js"></script>
 <script src="sim.js"></script>
 <script src="data/poi.js"></script>
+<script src="route-opt.js"></script>
 <!-- módulos de Marswalk (el "backend": lógica pura + clases que se montan sobre este mapa) -->
 <script src="gp-chart.js" defer></script>
 <script src="modules/trace/i18n/es.js"></script>
@@ -197,6 +199,8 @@
       <div class="row"><span class="k">batería al llegar</span><b id="pSoc">--</b></div>
       <div class="row"><span class="k">peor caso en ruta</span><b id="pTmin">--</b></div>
       <div class="row"><span class="k">desnivel</span><b id="pUp">--</b></div>
+      <div class="row"><span class="k">radiación</span><b id="pRad">--</b></div>
+      <div class="note" id="pRadSrc"></div>
       <div class="note" id="pBest"></div>
       <div class="note" id="pVeh"></div>
     </section>
@@ -248,7 +252,8 @@
       <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">CÓMO LEER</span></div>
       <p><b>Pronóstico</b>: temperatura del aire de 3 sols (REMS de Curiosity + GP). La franja naranja es tu travesía; la tira de colores abajo dice si salir a esa hora es <b>GO</b> (verde), <b>precaución</b> (naranja) o <b>NO-GO</b> (rojo). Clic en la gráfica = elegir hora de salida.</p>
       <p><b>Perfil</b>: elevación real (DEM USGS), velocidad del rover y batería a lo largo de la ruta. El rover frena en cuestas (potencia), curvas y bajadas; en rojo, tramos de más de 25°.</p>
-      <p>Tiempo real = conducción × <b>Ct</b> (paradas, maniobras, navegación).</p>
+      <p>Tiempo real = conducción × <b>Ct</b> (maniobras, navegación) + <b>paradas científicas</b> (rombos amarillos; clic para ver la ficha). Cuentan si la ruta pasa a ≤ 150 m.</p>
+      <p><b>Dato real</b>: relieve (DEM USGS), temperatura (REMS + GP), posiciones y fotos de Curiosity (NASA/JPL-Caltech), dosis de radiación (RAD). <b>Estimado</b>: vehículo (ref. LRV Apollo), tiempos de parada, bandas térmicas y objetivo de la misión (ilustrativo).</p>
       <div class="credits" id="credits"></div>
     </section>
   </aside>
@@ -344,7 +349,7 @@ let route = load() || CONFIG.rutaDemo.map((p) => p.slice());
 let editing = false, playing = false;
 
 /* ---------- mapa Leaflet (Mars Trek) ---------- */
-const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: A.MIN_ZOOM, maxBounds: A.BOUNDS, maxBoundsViscosity: 1, maxZoom: 19, zoomControl: false, attributionControl: false });
+const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: A.MIN_ZOOM, maxBounds: A.BOUNDS, maxBoundsViscosity: 1, maxZoom: 19, zoomSnap: 0.25, zoomControl: false, attributionControl: false });
 L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 const BASES = A.bases(L);
 const baseLayers = { imagen: BASES['IMAGEN · HiRISE/CTX'], relieve: BASES['RELIEVE · MOLA/HRSC'] };
@@ -420,7 +425,8 @@ function drawPins() {
 /* ---------- paradas científicas: marcadores + ficha ---------- */
 let poiOpen = null;
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const stopOf = (id) => (view === 'term' || view === 'geo') && R ? R.summary.stops.find((x) => x.id === id) : null;
+const simNow = () => view === 'trace' ? (MODULES.trace && MODULES.trace.sim) : R;   // simulación de la vista activa
+const stopOf = (id) => { const r = simNow(); return r ? r.summary.stops.find((x) => x.id === id) : null; };
 function drawPoi() {
   poiLayer.clearLayers();
   POIS.forEach((p) => { const st = stopOf(p.id);
@@ -435,7 +441,7 @@ function showPoi(id) {
   if (st) onr = `EN TU RUTA (a ${st.off_m.toFixed(0)} m, km ${(st.dist / 1000).toFixed(2)}): llegas ${hhmm(st.t_arr)}, sales ${hhmm(st.t_dep)}. Suma ${p.stop_min} min a la duración.`;
   else if (own && R) { const d = Math.min(...R.s.map((q) => SIM.dist([q.lat, q.lon], [p.lat, p.lon])));
     onr = `A ${fmtKm(d)} de tu ruta: no cuenta como parada (hay que pasar a ≤ ${p.radio} m).`; }
-  else if (!own) onr = `Parada estimada: ${p.stop_min} min. En TRACE es informativa (no cambia la simulación de la misión).`;
+  else if (!own) onr = `Tu ruta de TRACE no pasa a ≤ ${p.radio} m: no cuenta como parada.`;
   const foto = p.foto
     ? `<img src="${esc(p.foto)}" alt="${esc(p.nombre)}" onerror="this.outerHTML='<div class=&quot;nofoto&quot;>FOTO NO ENCONTRADA<br>${esc(p.foto)}</div>'">`
     : `<div class="nofoto">FOTO PENDIENTE</div>`;
@@ -453,6 +459,8 @@ function showPoi(id) {
     <div class="note">Coordenadas: ${esc(p.precision)}.</div>`;
   const add = $('poiAdd'); if (add) { add.onclick = () => poiToRoute(p); if (window.PxButton) PxButton.render(add); }
   $('poiCard').hidden = false; topH();
+  const c = $('poiCard'), x = map.latLngToContainerPoint([p.lat, p.lon]).x, edge = c.offsetLeft + c.offsetWidth + 40;
+  if (x < edge) map.panBy([x - edge - 60, 0], { animate: false });   // que la ficha no tape su propio marcador
 }
 function hidePoi() { poiOpen = null; $('poiCard').hidden = true; }
 function poiToRoute(p) {                  // inserta el punto en la ruta donde menos distancia añade
@@ -466,7 +474,7 @@ function moveAstro() { if (R) { const q = sampleAt(f); astro.setLatLng([q.lat, q
 function fit() {
   if (route.length < 2) { map.setView(A.CENTER, A.ZOOM); return; }
   const t = document.querySelector('.top'), top = t ? t.offsetTop + t.offsetHeight + 30 : 170;
-  map.fitBounds(L.latLngBounds(route.concat(POIS.map((p) => [p.lat, p.lon]))), { paddingTopLeft: [30, top], paddingBottomRight: [200, 130] });   // ruta + paradas científicas
+  map.fitBounds(L.latLngBounds(route.concat(POIS.map((p) => [p.lat, p.lon]))), { paddingTopLeft: [30, top], paddingBottomRight: [30, 130] });   // ruta + paradas científicas
 }
 
 /* ---------- gráficas ---------- */
@@ -497,6 +505,7 @@ function drawCharts() {
   const emin = Math.floor((Math.min(...el) - 10) / 50) * 50, emax = Math.ceil((Math.max(...el) + 10) / 50) * 50;
   const blk = []; let st = null;
   s.forEach((p, i) => { if (p.blocked && st == null) st = p.dist; if ((!p.blocked || i === s.length - 1) && st != null) { blk.push({ a: st / 1000, b: p.dist / 1000, color: 'rgba(255,59,31,.55)' }); st = null; } });
+  R.summary.stops.forEach((x) => blk.push({ a: x.dist / 1000 - L0 * 0.003, b: x.dist / 1000 + L0 * 0.003, color: 'rgba(255,210,63,.85)' }));   // paradas científicas
   const xt = AstChart.niceTicks(0, L0, 5).map((v) => ({ v, label: v + ' km' }));
   chP = AstChart.draw($('cProf'), { x0: 0, x1: L0, xTicks: xt, cursor: cur && cur.dist / 1000, spans: blk,
     panes: [
@@ -512,7 +521,7 @@ function drawCharts() {
 
 /* ---------- paneles ---------- */
 function plan() {
-  if (!R) { ['pRec', 'pDist', 'pDur', 'pV', 'pE', 'pSoc', 'pTmin', 'pUp'].forEach((id) => { $(id).textContent = '--'; }); $('pStops').textContent = '--';
+  if (!R) { ['pRec', 'pDist', 'pDur', 'pV', 'pE', 'pSoc', 'pTmin', 'pUp', 'pRad'].forEach((id) => { $(id).textContent = '--'; }); $('pStops').textContent = '--';
     $('pState').textContent = 'TRAZA UNA RUTA'; $('pState').style.background = '#9fc8ea'; $('pWhy').textContent = ''; return; }
   const S = R.summary;
   $('pRec').innerHTML = `SAL <b>${solHh(S.t0)}</b><br>LLEGAS <b>${solHh(S.t1)}</b>`;
@@ -526,6 +535,8 @@ function plan() {
   $('pSoc').textContent = `${(S.SOC_end * 100).toFixed(0)} %`;
   $('pTmin').textContent = S.Tlo_min == null ? 'fuera de pronóstico' : `${fmtC(S.Tlo_min)} a las ${hhmm(S.t_Tlo_min)}`;
   $('pUp').textContent = `+${S.desnivel_up.toFixed(0)} m / −${S.desnivel_dn.toFixed(0)} m`;
+  $('pRad').textContent = `${(S.dose_mSv * 1000).toFixed(0)} µSv`;
+  $('pRadSrc').textContent = `Radiación: ${SIM.DOSIS_mSv_DIA} mSv/día × duración (RAD de Curiosity en Gale; Hassler et al. 2014, Science 343). Límite de carrera NASA: ${SIM.LIMITE_CARRERA_mSv} mSv (NASA-STD-3001) → esta salida usa ${(S.dose_mSv / SIM.LIMITE_CARRERA_mSv * 100).toFixed(4)} %, ≈ ${Math.floor(SIM.LIMITE_CARRERA_mSv / S.dose_mSv).toLocaleString('es')} salidas iguales.`;
   $('pMeta').textContent = `${CONFIG.lugar} · salida cada ${CONFIG.pasoSalida} min`;
   if (scan) { const B = scan.best;
     $('pBest').innerHTML = `Mejor salida del pronóstico: <b style="color:${VERD[B.v.level]}">${solHh(B.t0)}</b> (${B.v.level}, peor caso ${B.r.summary.Tlo_min == null ? '--' : fmtC(B.r.summary.Tlo_min)}). Criterio: viable, la más templada; empate → menos energía.`; }
@@ -659,11 +670,12 @@ function statusStrip() {
     ? `<span class="chip"><em>ruta</em> ${fmtKm(S.dist_m)}</span><span class="chip"><em>desnivel</em> +${S.desnivel_up.toFixed(0)} / −${S.desnivel_dn.toFixed(0)} m</span>` +
       `<span class="chip"><em>pend. máx</em> ${S.theta_max_ruta.toFixed(1)}°</span><span class="chip v" style="background:${S.blocked_m > 0 ? '#ff3b1f' : '#4fd27a'}">${S.blocked_m > 0 ? 'TRAMO INTRANSITABLE' : 'TRANSITABLE'}</span>`
     : `<span class="chip"><em>sal</em> ${hhmm(S.t0)} <em>→ llegas</em> ${hhmm(S.t1)}</span><span class="chip v" style="background:${VERD[V.level]}">${V.level}</span>` +
-      `<span class="chip"><em>batería</em> ${(S.SOC_end * 100).toFixed(0)} %</span><span class="chip"><em>peor caso</em> ${S.Tlo_min == null ? '--' : fmtC(S.Tlo_min)}</span>`;
+      `<span class="chip"><em>batería</em> ${(S.SOC_end * 100).toFixed(0)} %</span><span class="chip"><em>peor caso</em> ${S.Tlo_min == null ? '--' : fmtC(S.Tlo_min)}</span>` +
+      `<span class="chip"><em>radiación</em> ${(S.dose_mSv * 1000).toFixed(0)} µSv</span>`;
 }
 function setView(v) {
   if (active && active !== v && MODULES[active]) { try { MODULES[active].deactivate(); } catch (e) { (window.MW_REPORT || console.error)('salir de ' + active, e); } }
-  const prev = view; view = v; active = MODULES[v] ? v : null;
+  const prev = view; view = v; active = MODULES[v] ? v : null; document.body.classList.toggle('v-trace', v === 'trace');
   const tab = (b, on) => { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); };
   tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo'); tab($('tabTrace'), v === 'trace'); tab($('tabDatos'), v === 'datos');
   document.querySelectorAll('[data-modes]').forEach((e) => { e.hidden = !e.dataset.modes.split(' ').includes(v); });
@@ -697,11 +709,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   const step = (n, fn) => { try { fn(); } catch (e) { (window.MW_REPORT || console.error)(n, e); } };   // un paso que falle no detiene los demás
   step('escaneo', rescan); step('simulación', resim); step('encuadre', fit); step('paradas', drawPoi);
   step('módulos', () => {
-    MODULES.trace = new TraceModule({ map, L, layers: A, dem, gp: D, t0: () => tDep, onExit: () => setView('term') });
+    MODULES.trace = new TraceModule({ map, L, layers: A, dem, gp: D, t0: () => tDep, onExit: () => setView('term'), stops: STOPS, onChange: () => { if (view === 'trace') drawPoi(); } });
     MODULES.datos = new DatosModule({ gp: D });
   });
   const start = { '#geo': 'geo', '#trace': 'trace', '#datos': 'datos' }[location.hash] || 'term';
-  step('vista', () => setView(start)); step('plan', plan);
+  step('vista', () => setView(start)); step('plan', plan); step('encuadre', fit);   // reencuadra ya con la tira de estado medida
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { map.invalidateSize(); update(); }, 120); });
 });
 </script>
