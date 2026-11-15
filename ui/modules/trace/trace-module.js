@@ -22,12 +22,12 @@
   const HTML = `
   <div class="tbar">
     <div class="brand"><b data-t="titulo">TRACE YOUR ROUTE!</b><i data-t="lema">Plan. Navigate. Discover.</i></div>
-    <button class="px-btn" data-size="sm" data-variant="danger" id="tr-edit">LISTO</button>
-    <button class="px-btn" data-size="sm" id="tr-undo">DESHACER</button>
-    <button class="px-btn" data-size="sm" id="tr-close">VOLVER A BASE</button>
-    <button class="px-btn" data-size="sm" id="tr-clear">BORRAR</button>
-    <button class="px-btn" data-size="sm" id="tr-fit">CENTRAR</button>
-    <button class="px-btn" data-size="sm" id="tr-opt">OPTIMIZAR RUTA</button>
+    <button class="px-btn" data-size="sm" data-variant="on" data-icon="pencil" id="tr-edit">LISTO</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="undo" id="tr-undo">DESHACER</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="home" id="tr-close">VOLVER A BASE</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="trash" id="tr-clear">BORRAR</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="target" id="tr-fit">CENTRAR</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="star" id="tr-opt">OPTIMIZAR RUTA</button>
     <span class="hint" id="tr-hint" hidden></span>
   </div>
   <aside>
@@ -40,10 +40,11 @@
       <div class="rss"><span class="n" id="tr-rssN">--</span><span class="c" id="tr-rssC">--</span></div>
       <div id="tr-msgs"></div>
       <div id="tr-optBox"></div>
-      <div class="btns"><button class="px-btn" data-size="md" data-variant="danger" id="tr-launch">LANZAR ROVER</button></div>
+      <div class="btns"><button class="px-btn" data-size="md" data-variant="danger" data-icon="rocket" id="tr-launch">LANZAR ROVER</button></div>
       <div class="row"><span class="k">distancia</span><b id="tr-eDist">--</b></div>
       <div class="row"><span class="k">duración estimada</span><b id="tr-eDur">--</b></div>
       <div class="row"><span class="k">batería al volver</span><b id="tr-eSoc">--</b></div>
+      <div class="row"><span class="k">radiación de la salida</span><b id="tr-eRad">--</b></div>
       <details><summary>VER TRAMOS (S · G · T · A · P)</summary>
       <table class="segs" id="tr-segs"></table>
       <p class="note">Riesgo por tramo (0–100): S pendiente ·35 %, G rugosidad ·30 %, T temperatura ·20 %, A accesibilidad ·15 %. P = 100 − R. Un tramo con P &lt; 25 limita el RSS a 49. El RSS es un índice del simulador, no una probabilidad real.</p></details>
@@ -61,9 +62,9 @@
     </section>
   </aside>
   <div class="timebar">
-    <button class="px-btn" data-size="sm" id="tr-pause" hidden>PAUSA</button>
-    <button class="px-btn" data-size="sm" id="tr-speed">x300</button>
-    <button class="px-btn" data-size="sm" id="tr-follow">SEGUIR</button>
+    <button class="px-btn" data-size="sm" data-icon="pause" id="tr-pause" hidden>PAUSA</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="speed" id="tr-speed">x300</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="eye" id="tr-follow">SEGUIR</button>
     <div class="hud" id="tr-hud"><span><em>listo para planificar</em></span></div>
     <div class="bar" title="batería"><i id="tr-socBar"></i></div>
   </div>
@@ -116,7 +117,7 @@
       this.onClick = (e) => { if (!this.editing || this.running) return; this.route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); this.changed(); };
       map.on('click', this.onClick); map.doubleClickZoom.disable();
       const $ = (id) => this.$(id);
-      $('edit').onclick = () => { if (this.running) return; this.editing = !this.editing; this.relabel($('edit'), this.editing ? 'LISTO' : 'TRAZAR'); this.drawRoute(); this.panel(); };
+      $('edit').onclick = () => { if (this.running) return; this.editing = !this.editing; $('edit').dataset.variant = this.editing ? 'on' : 'tool'; this.relabel($('edit'), this.editing ? 'LISTO' : 'TRAZAR'); this.drawRoute(); this.panel(); };
       $('undo').onclick = () => { if (this.running || this.route.length < 2) return; this.route.pop(); this.changed(); };
       $('close').onclick = () => { if (this.running || this.route.length < 2) return; if (TraceMissions.dist(this.route[this.route.length - 1], M.inicio) > 1) this.route.push(M.inicio.slice()); this.changed(); };
       $('clear').onclick = () => { if (this.running) return; this.route = [M.inicio.slice()]; this.runLayer.clearLayers(); this.rover.remove(); this.changed(); };
@@ -126,7 +127,7 @@
       $('pause').onclick = () => { if (!this.running) return; this.running.paused = !this.running.paused; this.relabel($('pause'), this.running.paused ? 'SEGUIR SIM' : 'PAUSA'); };
       $('speed').onclick = () => { this.speedI = (this.speedI + 1) % SPEEDS.length; this.relabel($('speed'), 'x' + SPEEDS[this.speedI]); };
       $('follow').onclick = () => { this.follow = !this.follow; this.relabel($('follow'), this.follow ? 'VISTA GENERAL' : 'SEGUIR'); if (this.follow) map.setZoom(16); else this.fit(); };
-      $('again').onclick = () => { $('modal').hidden = true; this.runLayer.clearLayers(); this.rover.remove(); this.editing = true; this.relabel($('edit'), 'LISTO'); this.drawRoute(); this.panel(); };
+      $('again').onclick = () => { $('modal').hidden = true; this.runLayer.clearLayers(); this.rover.remove(); this.editing = true; $('edit').dataset.variant = 'on'; this.relabel($('edit'), 'LISTO'); this.drawRoute(); this.panel(); };
       $('toMap').onclick = () => { $('modal').hidden = true; this.onExit && this.onExit(); };
       if (window.PxButton) PxButton.renderAll(this.root);
       this.root.querySelectorAll('section.acc > .px-panel__head').forEach((h) => { h.onclick = () => h.parentElement.classList.toggle('collapsed'); });
@@ -174,7 +175,7 @@
         `${dMin == null ? '' : `, ${dMin <= 0 ? '−' : '+'}${Math.abs(dMin).toFixed(0)} min`}<br>` +
         `Óptima: ${fmtKm(S.dist_m)} · ${fmtMin(S.dur_s)} · batería ${(S.SOC_end * 100).toFixed(0)} % · pend. máx ${S.theta_max_ruta.toFixed(0)}°. ` +
         `A* sobre el DEM USGS (rejilla ${o.res} m, ${o.ms.toFixed(0)} ms): minimiza el tiempo del rover, evita > ${o.sim.vehicle.theta_max}° y penaliza la rugosidad.</div>` +
-        `<div class="btns"><button class="px-btn" data-size="sm" id="tr-useOpt">USAR ÓPTIMA</button></div>`;
+        `<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" data-icon="route" id="tr-useOpt">USAR ÓPTIMA</button></div>`;
       const b = this.$('useOpt'); if (window.PxButton) PxButton.render(b);
       b.onclick = () => { if (this.running || !this.opt) return; this.route = this.opt.route.map((p) => p.slice()); this.optLayer.clearLayers(); this.changed(); };
     }
@@ -221,12 +222,13 @@
         $('eDist').textContent = fmtKm(sim.summary.dist_m);
         $('eDur').textContent = `${fmtMin(sim.summary.dur_s)} (Ct ${sim.summary.Ct}) · vuelta ${hhmm(sim.summary.t1)}`;
         $('eSoc').textContent = `${(sim.summary.SOC_end * 100).toFixed(0)} %`;
+        $('eRad').textContent = sim.summary.dose_mSv == null ? '--' : `${(sim.summary.dose_mSv * 1000).toFixed(0)} µSv (${(sim.summary.dose_mSv / SIM.LIMITE_CARRERA_mSv * 100).toFixed(3)} % del límite de carrera)`;
         $('segs').innerHTML = '<tr><th>tramo</th><th>m</th><th>S</th><th>G</th><th>T</th><th>A</th><th>P</th></tr>' +
           ev.segs.map((s) => `<tr class="${s.critico ? 'crit' : ''}"><td><span class="sw" style="background:${colP(s.intransitable ? 0 : s.P)}"></span>${s.i}${s.intransitable ? ' ✕' : ''}</td><td>${s.d.toFixed(0)}</td><td>${s.S.toFixed(0)}</td><td>${s.G.toFixed(0)}</td><td>${s.T.toFixed(0)}</td><td>${s.A.toFixed(0)}</td><td>${s.P.toFixed(0)}</td></tr>`).join('');
       } else {
         $('rssN').textContent = '--'; $('rssC').textContent = 'SIN RUTA'; $('rssC').style.background = '#9fc8ea';
         msgs.push(`<div class="msg warn">Haz clic en el mapa para añadir waypoints desde la BASE.</div>`);
-        ['eDist', 'eDur', 'eSoc'].forEach((id) => { $(id).textContent = '--'; }); $('segs').innerHTML = '';
+        ['eDist', 'eDur', 'eSoc', 'eRad'].forEach((id) => { $(id).textContent = '--'; }); $('segs').innerHTML = '';
       }
       $('msgs').innerHTML = msgs.join('');
       $('launch').disabled = !ev || chk.bloqueos.length > 0 || !!this.running;

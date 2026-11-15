@@ -59,25 +59,40 @@
                      background: repeating-linear-gradient(45deg, rgba(4,23,52,.9) 0 12px, rgba(12,40,80,.9) 12px 24px); box-shadow: 0 0 0 2px var(--ast-navy); }
 
   /* ---------- HUD ---------- */
-  .top { position: fixed; top: 14px; left: 18px; right: var(--side); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; pointer-events: none; z-index: 800; }
+  .top { position: fixed; top: 14px; left: 18px; right: calc(var(--rail-w, 320px) + 34px); display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; pointer-events: none; z-index: 800; }
+  .lcol { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  /* carril de módulos (derecha) */
+  .rail { position: fixed; top: 14px; right: 14px; z-index: 900; display: flex; flex-direction: column; gap: 12px; padding: 10px 12px 14px 30px;
+          background: rgba(4,23,52,.82); box-shadow: 0 0 0 4px var(--ast-navy), 0 0 0 8px var(--ast-abyss); }
+  .rail-h { font-size: 17px; color: #7fa6cc; letter-spacing: 2px; margin: 2px 0 -4px; }
+  .rail-h:not(:first-child) { margin-top: 8px; padding-top: 10px; border-top: 2px dashed #17365e; }
+  .navi { position: relative; }
+  .navi.on::before { content: ''; position: absolute; left: -22px; top: 50%; transform: translateY(-50%); border: 9px solid transparent; border-left: 12px solid #ffd23f; border-right: 0; }
+  /* herramientas de la ruta (sobre el dock) */
+  .dock { position: fixed; left: 18px; right: 18px; bottom: 14px; z-index: 850; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
+  .dock > * { pointer-events: auto; }
+  .tools { display: flex; gap: 12px; flex-wrap: wrap; align-self: flex-start; }
+  .dock .timebar { position: static; }
+  .radbar { height: 14px; margin: 8px 0 10px; background: var(--ast-navy); box-shadow: 0 0 0 2px var(--ast-abyss); }
+  .radbar i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, #ffd23f 0 8px, #f2a906 8px 10px); }
+  #status .chip[data-go] { cursor: pointer; }
+  #status .chip[data-go]:hover { box-shadow: 0 0 0 2px #ffd23f, 0 0 0 4px var(--ast-abyss); }
   .top > * { pointer-events: auto; }
   .top .spacer { flex: 1; }
   .demo { font-size: 20px; color: var(--ast-orange); text-shadow: 2px 2px 0 var(--ast-abyss); }
-  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .top { z-index: 900 !important; }
   .op { display: flex; align-items: center; gap: 8px; font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 2px 10px; box-shadow: 0 0 0 2px var(--ast-navy); }
   .op input[type=range] { width: 110px; flex: none; }
   .credits { font-size: 16px; line-height: 1.2; color: #7fa6cc; }
 
-  aside { position: fixed; top: var(--toph, 90px); right: 10px; bottom: calc(var(--dock-h) + 20px); width: var(--panel-w); overflow-y: auto; overflow-x: hidden; z-index: 800; }
+  aside { position: fixed; top: var(--toph, 90px); right: calc(var(--rail-w, 320px) + 34px); bottom: calc(var(--dock-h) + 20px); width: var(--panel-w); overflow-y: auto; overflow-x: hidden; z-index: 800; }
   /* ---------- tira de estado (lo esencial en una línea) ---------- */
-  #status { flex-basis: 100%; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; cursor: pointer; }
+  #status { flex: 1; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; cursor: pointer; }
   #status .chip { font-size: 22px; color: #e8f4ff; background: rgba(4,23,52,.88); padding: 3px 12px; box-shadow: 0 0 0 2px var(--ast-navy), 0 0 0 4px var(--ast-abyss); white-space: nowrap; }
   #status .chip em { font-style: normal; color: #9fc8ea; }
   #status .chip.v { color: var(--ast-abyss); }
   /* ---------- dock: tiempo + apartados ---------- */
-  .secs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .secs .px-btn.on { filter: brightness(1.25); }
+  .secs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+  .secs::before { content: 'APARTADOS'; font-size: 16px; color: #7fa6cc; letter-spacing: 2px; margin-right: 4px; }
   .closex { position: absolute; top: 8px; right: 12px; font: 24px var(--px-font); color: #9fc8ea; cursor: pointer; background: none; border: 0; }
   .closex:hover { color: var(--ast-orange); }
   aside .px-panel { margin: 8px 8px 16px; }
@@ -97,14 +112,14 @@
   .help b { font-weight: normal; color: var(--ast-orange); }
 
   /* ---------- gráficas inferiores ---------- */
-  .charts { position: fixed; left: 18px; right: 18px; bottom: calc(var(--dock-h) + 20px); height: min(44vh, 420px); display: flex; gap: 14px; z-index: 800; }
+  .charts { position: fixed; left: 18px; right: calc(var(--rail-w, 320px) + 34px); bottom: calc(var(--dock-h) + 20px); height: min(44vh, 420px); display: flex; gap: 14px; z-index: 800; }
   .cbox { position: relative; }
   .cbox { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; padding-top: 10px !important; padding-bottom: 8px !important; }
   .cbox .px-panel__head { margin-bottom: 4px; }
   .cbox canvas { flex: 1; width: 100%; min-height: 0; display: block; cursor: crosshair; }
 
   /* ---------- barra de tiempo ---------- */
-  .timebar { position: fixed; left: 18px; right: 18px; bottom: 14px; display: flex; gap: 14px; align-items: center; z-index: 850; flex-wrap: wrap;
+  .timebar { position: fixed; left: 18px; right: 18px; bottom: 14px; display: flex; gap: 16px; align-items: center; z-index: 850; flex-wrap: wrap;
              background: rgba(4,23,52,.88); padding: 10px 14px; box-shadow: 0 0 0 4px var(--ast-navy), 0 0 0 8px var(--ast-abyss); }
   .clock { font-size: 26px; color: #e8f4ff; min-width: 210px; }
   input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 28px; background: transparent; border: 0; outline: none; cursor: pointer; }
@@ -114,7 +129,7 @@
   input[type=range]::-moz-range-thumb { width: 16px; height: 24px; background: var(--ast-orange); border: 0; border-radius: 0; box-shadow: 0 0 0 2px var(--ast-abyss); }
 
   /* módulo DATOS: panel grande sobre el área del mapa */
-  #mod-datos .dmain { position: fixed; left: 18px; right: calc(var(--panel-w) + 30px); top: var(--toph, 84px); bottom: 14px; margin: 0; overflow: auto; z-index: 800; }
+  #mod-datos .dmain { position: fixed; left: 18px; right: calc(var(--panel-w) + var(--rail-w, 320px) + 50px); top: var(--toph, 84px); bottom: 14px; margin: 0; overflow: auto; z-index: 800; }
   #mod-datos .txt { font-size: 20px; line-height: 1.2; color: #cfe6fa; margin: 0 0 8px; }
   #mod-datos .txt b { font-weight: normal; color: #f26306; }
   #mod-datos table.segs { width: 100%; border-collapse: collapse; font-size: 18px; color: #cfe6fa; }
@@ -155,25 +170,24 @@
   <div id="grid"></div>
 
   <div class="top">
-    <button class="px-btn" data-size="sm" id="back">BACK</button>
-    <div class="tabs">
-      <button class="px-btn" data-size="sm" data-variant="danger" id="tabTerm">TÉRMICO</button>
-      <button class="px-btn" data-size="sm" id="tabGeo">GEOTOPOLÓGICO</button>
-      <button class="px-btn" data-size="sm" id="tabTrace">TRACE YOUR ROUTE!</button>
-      <button class="px-btn" data-size="sm" id="tabDatos">DATOS</button>
+    <div class="lcol">
+      <button class="px-btn" data-size="sm" data-variant="danger" data-icon="back" id="back" title="Volver al menú">BACK</button>
+      <label class="op" id="opBox" hidden title="Superpone el relieve MOLA/HRSC sobre la imagen">RELIEVE <input type="range" id="op" min="0" max="100" value="60" aria-label="Opacidad del relieve"></label>
     </div>
-    <span class="spacer"></span>
+    <div id="status" data-modes="term geo" title="Clic en un dato para ver el detalle"></div>
     <span class="demo" id="demo" hidden>DATOS DE DEMO — corre export_gp.py</span>
-    <button class="px-btn" data-size="sm" id="base">BASE: IMAGEN</button>
-    <label class="op" id="opBox" hidden>RELIEVE <input type="range" id="op" min="0" max="100" value="60" aria-label="Opacidad del relieve"></label>
-    <span data-modes="term geo" style="display:contents">
-    <button class="px-btn" data-size="sm" id="edit">EDITAR RUTA</button>
-    <button class="px-btn" data-size="sm" id="undo" hidden>DESHACER</button>
-    <button class="px-btn" data-size="sm" data-variant="danger" id="clear" hidden>BORRAR</button>
-    <button class="px-btn" data-size="sm" id="fit">CENTRAR</button>
-    </span>
-    <div id="status" data-modes="term geo" title="Clic para ver el detalle"></div>
   </div>
+
+  <!-- carril derecho: navegación entre módulos (uno activo, marcado en dorado) + capa base -->
+  <nav class="rail" aria-label="Módulos de Marswalk">
+    <span class="rail-h">MÓDULOS</span>
+    <div class="navi"><button class="px-btn" data-size="sm" data-icon="thermo" id="tabTerm" title="Temperatura en ruta, mejor hora de salida, batería y radiación">TÉRMICO</button></div>
+    <div class="navi"><button class="px-btn" data-size="sm" data-icon="mountain" id="tabGeo" title="Relieve, pendientes y tramos intransitables">GEOTOPOLÓGICO</button></div>
+    <div class="navi"><button class="px-btn" data-size="sm" data-icon="flag" id="tabTrace" title="Misión: traza tu ruta, ruta óptima y lanza el rover">TRACE ROUTE</button></div>
+    <div class="navi"><button class="px-btn" data-size="sm" data-icon="data" id="tabDatos" title="De dónde sale la temperatura (REMS + GP)">DATOS</button></div>
+    <span class="rail-h">MAPA</span>
+    <div class="navi"><button class="px-btn" data-size="sm" data-variant="tool" data-icon="image" id="base" title="Cambiar la capa de fondo">BASE: IMAGEN</button></div>
+  </nav>
 
   <aside id="mainAside" data-modes="term geo">
     <!-- Apartados: se muestra UNO a la vez (botones del dock). -->
@@ -187,9 +201,9 @@
       <div class="state" id="pState">--</div>
       <div class="why" id="pWhy"></div>
       <div class="btns">
-        <button class="px-btn" data-size="sm" id="depM">-15 MIN</button>
-        <button class="px-btn" data-size="sm" id="depP">+15 MIN</button>
-        <button class="px-btn" data-size="sm" data-variant="danger" id="depBest">MEJOR SALIDA</button>
+        <button class="px-btn" data-size="sm" data-variant="tool" id="depM">-15 MIN</button>
+        <button class="px-btn" data-size="sm" data-variant="tool" id="depP">+15 MIN</button>
+        <button class="px-btn" data-size="sm" data-variant="danger" data-icon="star" id="depBest">MEJOR SALIDA</button>
       </div>
       <div class="row"><span class="k">distancia</span><b id="pDist">--</b></div>
       <div class="row"><span class="k">duración real</span><b id="pDur">--</b></div>
@@ -220,6 +234,7 @@
       <div class="row"><span class="k">potencia</span><b id="rP">--</b></div>
       <div class="row"><span class="k">batería</span><b id="rSoc">--</b></div>
       <div class="row"><span class="k">recorrido</span><b id="dist">--</b></div>
+      <div class="row"><span class="k">radiación acumulada</span><b id="rRad">--</b></div>
       <div class="state" id="state">--</div>
       <div class="advice" id="advice"></div>
       <div class="note">La banda se decide con el peor caso (límite frío del 95 %), no con la media.</div>
@@ -245,6 +260,29 @@
       <div class="row"><span class="k">elev. / pend. cursor</span><b id="gCurE">--</b></div>
       <div class="note" id="gSrc"></div>
       <div class="note">Pendiente con signo en el sentido de la marcha (+ sube). Distancias geodésicas sobre Marte (R = 3389.5 km). El relieve de color es MOLA/HRSC (~200 m/px), orientativo.</div>
+    </section>
+
+    <section class="px-panel" data-sec="rad">
+      <button class="closex" data-close>✕</button>
+      <div class="px-panel__head">
+        <span class="px-label" data-size="sm" data-color="#e8f4ff">RADIACIÓN</span>
+        <div class="px-panel__meta">dosis equivalente · superficie del cráter Gale</div>
+      </div>
+      <div class="big" id="radNow">--</div>
+      <div class="k" id="radNowK">acumulada hasta este momento de la salida (usa PLAY o la barra de tiempo)</div>
+      <div class="radbar"><i id="radBar"></i></div>
+      <div class="row"><span class="k">dosis de la salida</span><b id="radTot">--</b></div>
+      <div class="row"><span class="k">· conduciendo</span><b id="radDrive">--</b></div>
+      <div class="row"><span class="k">· en paradas científicas</span><b id="radStop">--</b></div>
+      <div class="row"><span class="k">tasa (RAD de Curiosity)</span><b id="radRate">--</b></div>
+      <div class="k" style="margin-top:10px">EQUIVALE A</div>
+      <div class="row"><span class="k">radiografías de tórax</span><b id="radXr">--</b></div>
+      <div class="row"><span class="k">días de fondo natural en la Tierra</span><b id="radEarth">--</b></div>
+      <div class="row"><span class="k">límite de carrera NASA</span><b id="radCar">--</b></div>
+      <div class="row"><span class="k">salidas así hasta el límite</span><b id="radN">--</b></div>
+      <div class="row"><span class="k">misión completa a Marte</span><b>≈ 1000 mSv</b></div>
+      <div class="advice" id="radAdv"></div>
+      <div class="note">Tasa media en superficie 0.67 mSv/día (MSL RAD; Hassler et al. 2014, Science 343, 1244797). Misión completa: ~660 mSv de crucero ida y vuelta (Zeitlin et al. 2013) + ~320 mSv en 500 días de superficie. Radiografía de tórax ≈ 0.1 mSv y fondo natural en la Tierra ≈ 3 mSv/año (RadiologyInfo, ACR/RSNA). Límite de carrera: 600 mSv (NASA-STD-3001). ESTIMADO: tasa constante; no modela eventos de partículas solares ni el blindaje del relieve.</div>
     </section>
 
     <section class="px-panel help" data-sec="help">
@@ -278,11 +316,20 @@
     </section>
   </div>
 
-  <div class="timebar" data-modes="term geo">
-    <button class="px-btn" data-size="sm" id="play">PLAY</button>
+  <div class="dock" data-modes="term geo">
+  <!-- herramientas de la ruta (estilo oscuro) -->
+  <div class="tools">
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="pencil" id="edit" title="Clic en el mapa añade waypoints">EDITAR RUTA</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="undo" id="undo" hidden>DESHACER</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="trash" id="clear" hidden>BORRAR</button>
+    <button class="px-btn" data-size="sm" data-variant="tool" data-icon="target" id="fit" title="Encuadrar ruta y paradas">CENTRAR</button>
+  </div>
+  <div class="timebar">
+    <button class="px-btn" data-size="sm" data-icon="play" id="play">PLAY</button>
     <input type="range" id="time" min="0" max="1000" value="0" aria-label="Momento de la travesía">
     <span class="clock" id="clock">--:--</span>
     <div class="secs" id="secs"></div>
+  </div>
   </div>
 
 <script>
@@ -347,6 +394,7 @@ function demoData() {        // solo si falta export_gp.py: curva diaria sintét
 let D, R = null, V = null, scan = null, tDep = 0, f = 0, view = 'term', baseKey = 'imagen';
 let route = load() || CONFIG.rutaDemo.map((p) => p.slice());
 let editing = false, playing = false;
+const reliefOp = { term: 0, geo: 60 };   // opacidad del relieve sobre la imagen, por vista
 
 /* ---------- mapa Leaflet (Mars Trek) ---------- */
 const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: A.MIN_ZOOM, maxBounds: A.BOUNDS, maxBoundsViscosity: 1, maxZoom: 19, zoomSnap: 0.25, zoomControl: false, attributionControl: false });
@@ -450,7 +498,7 @@ function showPoi(id) {
     <div class="row"><span class="k">elev. / pendiente</span><b>${fmtE(p.lat, p.lon)}</b></div>
     <div class="row"><span class="k">parada estimada</span><b>${p.stop_min} min (ESTIMADO)</b></div>
     ${onr ? `<div class="onr">${onr}</div>` : ''}
-    ${own && !st ? '<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" id="poiAdd">PASAR POR AQUÍ</button></div>' : ''}
+    ${own && !st ? '<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" data-icon="route" id="poiAdd">PASAR POR AQUÍ</button></div>' : ''}
     <div class="k">OBJETIVO CIENTÍFICO</div><p class="txt">${esc(p.objetivo)}</p>
     <div class="k">QUÉ MEDIR / MUESTREAR</div><p class="txt">${esc(p.medir)}</p>
     <div class="k">LO QUE VERÁS AL LLEGAR</div>
@@ -474,7 +522,7 @@ function moveAstro() { if (R) { const q = sampleAt(f); astro.setLatLng([q.lat, q
 function fit() {
   if (route.length < 2) { map.setView(A.CENTER, A.ZOOM); return; }
   const t = document.querySelector('.top'), top = t ? t.offsetTop + t.offsetHeight + 30 : 170;
-  map.fitBounds(L.latLngBounds(route.concat(POIS.map((p) => [p.lat, p.lon]))), { paddingTopLeft: [30, top], paddingBottomRight: [30, 130] });   // ruta + paradas científicas
+  map.fitBounds(L.latLngBounds(route.concat(POIS.map((p) => [p.lat, p.lon]))), { paddingTopLeft: [30, top], paddingBottomRight: [(document.querySelector('.rail') || { offsetWidth: 0 }).offsetWidth + 40, ((document.querySelector('.dock') || {}).offsetHeight || 110) + 30] });   // ruta + paradas científicas
 }
 
 /* ---------- gráficas ---------- */
@@ -563,12 +611,36 @@ function update() {
   $('rP').textContent = `${q.P.toFixed(0)} W`;
   $('rSoc').textContent = `${(q.SOC * 100).toFixed(1)} %`;
   $('dist').textContent = `${fmtKm(q.dist)} de ${fmtKm(R.summary.dist_m)}`;
+  radPanel(q);
   $('state').textContent = b ? b.nombre : '--'; $('state').style.background = b ? b.color : '#9fc8ea';
   $('advice').textContent = b ? b.consejo : '';
   $('gPos').textContent = fmtLL(q.lat, q.lon); $('gDist').textContent = fmtKm(q.dist);
   $('gEl').textContent = `${q.elev.toFixed(0)} m`; $('gSl').textContent = `${(q.theta * 180 / Math.PI).toFixed(1)}°`;
   $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(q.t)} LTST`;
   moveAstro(); drawCharts();
+}
+/* ---------- radiación (dosis equivalente; tasa media de RAD, sim.js) ---------- */
+const XRAY_mSv = 0.1, EARTH_mSv_DIA = 3 / 365.25;
+const fmtDose = (mSv) => mSv < 1 ? `${(mSv * 1000).toFixed(mSv < 0.01 ? 1 : 0)} µSv` : `${mSv.toFixed(2)} mSv`;
+function radPanel(q) {
+  if (!R) return;
+  const S = R.summary, rate = SIM.DOSIS_mSv_DIA / 86400;                        // mSv por segundo
+  const now = rate * Math.max(0, (q.t - S.t0) * SOL_S), tot = S.dose_mSv, stop = rate * (S.stop_s || 0);
+  $('rRad').textContent = fmtDose(now);
+  $('radNow').textContent = fmtDose(now);
+  $('radNowK').textContent = `acumulada a las ${hhmm(q.t)} de ${fmtDose(tot)} en toda la salida (usa PLAY o la barra de tiempo)`;
+  $('radBar').style.width = (tot > 0 ? clamp(now / tot, 0, 1) * 100 : 0) + '%';
+  $('radTot').textContent = `${fmtDose(tot)} en ${fmtMin(S.dur_s)}`;
+  $('radDrive').textContent = fmtDose(tot - stop);
+  $('radStop').textContent = S.stop_s ? `${fmtDose(stop)} (${fmtMin(S.stop_s)})` : 'sin paradas';
+  $('radRate').textContent = `${(SIM.DOSIS_mSv_DIA * 1000 / 24).toFixed(0)} µSv/h · ${SIM.DOSIS_mSv_DIA} mSv/día`;
+  $('radXr').textContent = (tot / XRAY_mSv).toFixed(2);
+  $('radEarth').textContent = `${(tot / EARTH_mSv_DIA).toFixed(1)} días`;
+  $('radCar').textContent = `${(tot / SIM.LIMITE_CARRERA_mSv * 100).toFixed(3)} % de ${SIM.LIMITE_CARRERA_mSv} mSv`;
+  $('radN').textContent = `≈ ${Math.floor(SIM.LIMITE_CARRERA_mSv / tot).toLocaleString('es')}`;
+  $('radAdv').textContent = `Fuera del hábitat el único escudo es la atmósfera (~20 g/cm²). Cada 10 min fuera suman ${fmtDose(rate * 600)}: ` +
+    `${S.stop_s ? 'las paradas científicas son ' + Math.round(S.stop_s / S.dur_s * 100) + ' % de esta dosis. ' : ''}La dosis de una salida es pequeña; ` +
+    `lo que pesa es la suma de toda la misión. Ante un aviso de evento de partículas solares (SPE): volver al hábitat.`;
 }
 function redraw() { resim(); drawRoute(); drawPins(); drawPoi(); plan(); update(); statusStrip(); }
 function routeChanged() { save(route); rescan(); redraw(); }
@@ -587,6 +659,7 @@ $('cProf').addEventListener('mousemove', (e) => { const x = chP && chP.xAt(e.cli
 function relabel(btn, txt) { btn.dataset.label = txt; btn.textContent = txt; PxButton.render(btn); }
 $('edit').onclick = () => {
   editing = !editing; $('map').classList.toggle('edit', editing);
+  $('edit').dataset.variant = editing ? 'on' : 'tool'; $('edit').dataset.icon = editing ? 'star' : 'pencil';
   relabel($('edit'), editing ? 'LISTO' : 'EDITAR RUTA');
   $('undo').hidden = $('clear').hidden = !editing;
   if (editing) { PxButton.render($('undo')); PxButton.render($('clear')); }
@@ -604,7 +677,7 @@ $('depP').onclick = () => setDep(tDep + CONFIG.pasoSalida / 1440);
 $('depBest').onclick = () => { if (scan) setDep(scan.best.t0); };
 $('time').oninput = (e) => { f = e.target.value / 1000; update(); };
 $('play').onclick = () => {
-  playing = !playing; relabel($('play'), playing ? 'PAUSA' : 'PLAY');
+  playing = !playing; $('play').dataset.icon = playing ? 'pause' : 'play'; relabel($('play'), playing ? 'PAUSA' : 'PLAY');
   if (!playing) return;
   if (f >= 1) f = 0;
   let last = performance.now();
@@ -612,7 +685,7 @@ $('play').onclick = () => {
     if (!playing) return;
     f = Math.min(1, f + (now - last) / 1000 / CONFIG.segundosAnimacion); last = now;
     $('time').value = Math.round(f * 1000); update();
-    if (f < 1) requestAnimationFrame(step); else { playing = false; relabel($('play'), 'PLAY'); }
+    if (f < 1) requestAnimationFrame(step); else { playing = false; $('play').dataset.icon = 'play'; relabel($('play'), 'PLAY'); }
   };
   requestAnimationFrame(step);
 };
@@ -621,8 +694,9 @@ $('play').onclick = () => {
 function setBase(k) {
   baseKey = k; map.removeLayer(baseLayers.imagen); map.removeLayer(baseLayers.relieve);
   baseLayers[k].addTo(map);
-  if (view === 'geo' && k === 'imagen') reliefOver.addTo(map); else map.removeLayer(reliefOver);
-  $('opBox').hidden = !(view === 'geo' && k === 'imagen');
+  const rel = (view === 'term' || view === 'geo') && k === 'imagen';
+  if (rel) { reliefOver.setOpacity(reliefOp[view] / 100); reliefOver.addTo(map); $('op').value = reliefOp[view]; } else map.removeLayer(reliefOver);
+  $('opBox').hidden = !rel;
   relabel($('base'), k === 'imagen' ? 'BASE: IMAGEN' : 'BASE: RELIEVE');
 }
 /* ---------- registro de módulos (Marswalk = un solo mapa; cada módulo se monta/desmonta sobre él) ---------- */
@@ -635,16 +709,26 @@ function ownLayers(on) {               // capas del mapa térmico/geo: se retira
 const HASH = { term: '#termico', geo: '#geo', trace: '#trace', datos: '#datos' };
 function topH() {   // mide la barra superior y el dock visibles para que paneles y gráficas nunca queden debajo
   const t = document.querySelector('.top'); document.body.style.setProperty('--toph', (t.offsetTop + t.offsetHeight + 10) + 'px');
-  const tb = [...document.querySelectorAll('.timebar')].find((e) => !e.closest('[hidden]') && e.getClientRects().length);
+  const tb = [...document.querySelectorAll('.dock, #mod-trace .timebar')].find((e) => !e.closest('[hidden]') && e.getClientRects().length);
   if (tb) document.body.style.setProperty('--dock-h', (tb.offsetHeight + 4) + 'px');
 }
 addEventListener('resize', topH);
+function railEq() {   // botones del carril con el mismo ancho (en px de arte) y ancho del carril en --rail-w
+  const small = innerWidth < 1500, sz = small ? 'xs' : 'sm', sc = small ? 2 : 3;   // pantallas de portátil: botones más compactos
+  document.querySelectorAll('.tools .px-btn, #play, #back').forEach((b) => { if (b.dataset.size !== sz) { b.dataset.size = sz; PxButton.render(b); } });
+  const bs = [...document.querySelectorAll('.rail .px-btn')];
+  bs.forEach((b) => { delete b.dataset.minw; b.dataset.size = sz; PxButton.render(b); });
+  const w = Math.max(...bs.map((b) => parseFloat(b.style.width) / sc));
+  bs.forEach((b) => { b.dataset.minw = Math.ceil(w); PxButton.render(b); });
+  document.body.style.setProperty('--rail-w', document.querySelector('.rail').offsetWidth + 'px');
+}
 /* ---------- apartados: uno a la vez ---------- */
-const SECS = { term: [['plan', 'PLAN'], ['now', 'EN RUTA'], ['pron', 'PRONÓSTICO'], ['perf', 'PERFIL'], ['help', 'AYUDA']],
-               geo: [['geo', 'TERRENO'], ['perf', 'PERFIL'], ['help', 'AYUDA']] };
+const SECS = { term: [['plan', 'PLAN', 'plan'], ['now', 'EN RUTA', 'astro'], ['pron', 'PRONÓSTICO', 'sun'], ['perf', 'PERFIL', 'profile'], ['rad', 'RADIACIÓN', 'rad'], ['help', 'AYUDA', 'help']],
+               geo: [['geo', 'TERRENO', 'mountain'], ['perf', 'PERFIL', 'profile'], ['help', 'AYUDA', 'help']] };
+const ASIDE_SECS = ['plan', 'now', 'geo', 'rad', 'help'];
 let sec = null;
 function buildSecs(v) {
-  $('secs').innerHTML = (SECS[v] || []).map(([k, t]) => `<button class="px-btn" data-size="sm" data-sec-btn="${k}">${t}</button>`).join('');
+  $('secs').innerHTML = (SECS[v] || []).map(([k, t, ic]) => `<button class="px-btn" data-size="xs" data-icon="${ic}" data-sec-btn="${k}" title="Abrir/cerrar ${t}">${t}</button>`).join('');
   $('secs').querySelectorAll('[data-sec-btn]').forEach((b) => { b.onclick = () => setSec(sec === b.dataset.secBtn ? null : b.dataset.secBtn); PxButton.render(b); });
   if (!(SECS[v] || []).some(([k]) => k === sec)) sec = null;
   setSec(sec);
@@ -652,31 +736,31 @@ function buildSecs(v) {
 function setSec(k) {
   sec = k;
   document.querySelectorAll('[data-sec]').forEach((e) => { e.hidden = e.dataset.sec !== k; });
-  $('mainAside').classList.toggle('open', ['plan', 'now', 'geo', 'help'].includes(k));
-  $('mainAside').style.display = ['plan', 'now', 'geo', 'help'].includes(k) ? '' : 'none';
+  $('mainAside').classList.toggle('open', ASIDE_SECS.includes(k));
+  $('mainAside').style.display = ASIDE_SECS.includes(k) ? '' : 'none';
   document.querySelector('.charts').style.display = ['pron', 'perf'].includes(k) ? '' : 'none';
-  $('secs').querySelectorAll('[data-sec-btn]').forEach((b) => { const on = b.dataset.secBtn === k; if ((b.dataset.variant === 'danger') !== on) { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); } });
+  $('secs').querySelectorAll('[data-sec-btn]').forEach((b) => { const on = b.dataset.secBtn === k; if ((b.dataset.variant === 'on') !== on) { b.dataset.variant = on ? 'on' : 'blue'; PxButton.render(b); } });
   if (k) { document.querySelectorAll(`[data-sec="${k}"] .px-btn`).forEach((b) => PxButton.render(b)); }
   topH(); update();
 }
 document.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) setSec(null); });
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && (view === 'term' || view === 'geo')) setSec(null); });
-$('status').onclick = () => setSec(view === 'geo' ? 'geo' : 'plan');
+$('status').onclick = (e) => { const c = e.target.closest('[data-go]'); setSec(c ? c.dataset.go : (view === 'geo' ? 'geo' : 'plan')); };
 function statusStrip() {
   const el = $('status'); if (!el) return;
   if (!R) { el.innerHTML = '<span class="chip">TRAZA UNA RUTA: EDITAR RUTA → clic en el mapa</span>'; return; }
   const S = R.summary;
   el.innerHTML = view === 'geo'
-    ? `<span class="chip"><em>ruta</em> ${fmtKm(S.dist_m)}</span><span class="chip"><em>desnivel</em> +${S.desnivel_up.toFixed(0)} / −${S.desnivel_dn.toFixed(0)} m</span>` +
-      `<span class="chip"><em>pend. máx</em> ${S.theta_max_ruta.toFixed(1)}°</span><span class="chip v" style="background:${S.blocked_m > 0 ? '#ff3b1f' : '#4fd27a'}">${S.blocked_m > 0 ? 'TRAMO INTRANSITABLE' : 'TRANSITABLE'}</span>`
-    : `<span class="chip"><em>sal</em> ${hhmm(S.t0)} <em>→ llegas</em> ${hhmm(S.t1)}</span><span class="chip v" style="background:${VERD[V.level]}">${V.level}</span>` +
-      `<span class="chip"><em>batería</em> ${(S.SOC_end * 100).toFixed(0)} %</span><span class="chip"><em>peor caso</em> ${S.Tlo_min == null ? '--' : fmtC(S.Tlo_min)}</span>` +
-      `<span class="chip"><em>radiación</em> ${(S.dose_mSv * 1000).toFixed(0)} µSv</span>`;
+    ? `<span class="chip" data-go="geo"><em>ruta</em> ${fmtKm(S.dist_m)}</span><span class="chip" data-go="perf"><em>desnivel</em> +${S.desnivel_up.toFixed(0)} / −${S.desnivel_dn.toFixed(0)} m</span>` +
+      `<span class="chip" data-go="perf"><em>pend. máx</em> ${S.theta_max_ruta.toFixed(1)}°</span><span class="chip v" data-go="geo" style="background:${S.blocked_m > 0 ? '#ff3b1f' : '#4fd27a'}">${S.blocked_m > 0 ? 'TRAMO INTRANSITABLE' : 'TRANSITABLE'}</span>`
+    : `<span class="chip" data-go="plan"><em>sal</em> ${hhmm(S.t0)} <em>→ llegas</em> ${hhmm(S.t1)}</span><span class="chip v" data-go="plan" style="background:${VERD[V.level]}">${V.level}</span>` +
+      `<span class="chip" data-go="perf"><em>batería</em> ${(S.SOC_end * 100).toFixed(0)} %</span><span class="chip" data-go="pron"><em>peor caso</em> ${S.Tlo_min == null ? '--' : fmtC(S.Tlo_min)}</span>` +
+      `<span class="chip" data-go="rad"><em>☢ radiación</em> ${(S.dose_mSv * 1000).toFixed(0)} µSv</span>`;
 }
 function setView(v) {
   if (active && active !== v && MODULES[active]) { try { MODULES[active].deactivate(); } catch (e) { (window.MW_REPORT || console.error)('salir de ' + active, e); } }
   const prev = view; view = v; active = MODULES[v] ? v : null; document.body.classList.toggle('v-trace', v === 'trace');
-  const tab = (b, on) => { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); };
+  const tab = (b, on) => { b.dataset.variant = on ? 'on' : 'blue'; b.parentElement.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); PxButton.render(b); };
   tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo'); tab($('tabTrace'), v === 'trace'); tab($('tabDatos'), v === 'datos');
   document.querySelectorAll('[data-modes]').forEach((e) => { e.hidden = !e.dataset.modes.split(' ').includes(v); });
   try { history.replaceState(null, '', location.search + HASH[v]); } catch (e) {}
@@ -697,7 +781,7 @@ $('tabGeo').onclick = () => setView('geo');
 $('tabTrace').onclick = () => setView('trace');
 $('tabDatos').onclick = () => setView('datos');
 $('base').onclick = () => setBase(baseKey === 'imagen' ? 'relieve' : 'imagen');
-$('op').oninput = (e) => reliefOver.setOpacity(e.target.value / 100);
+$('op').oninput = (e) => { reliefOp[view] = +e.target.value; reliefOver.setOpacity(e.target.value / 100); };
 
 /* ---------- arranque ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
@@ -713,8 +797,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     MODULES.datos = new DatosModule({ gp: D });
   });
   const start = { '#geo': 'geo', '#trace': 'trace', '#datos': 'datos' }[location.hash] || 'term';
+  step('carril', railEq);
   step('vista', () => setView(start)); step('plan', plan); step('encuadre', fit);   // reencuadra ya con la tira de estado medida
-  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { map.invalidateSize(); update(); }, 120); });
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { railEq(); topH(); map.invalidateSize(); update(); }, 120); });
 });
 </script>
 </body>

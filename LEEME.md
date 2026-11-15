@@ -12,11 +12,23 @@ cuánto dura, cuánta batería queda, qué frío hará en el peor caso y dónde 
 
 Si algo falla en JavaScript aparece un recuadro rojo con la línea (`ui/errbox.js`).
 
+## Cómo se lee la interfaz
+
+| Dónde | Qué es | Aspecto |
+|---|---|---|
+| Arriba a la izquierda | **BACK** (volver al menú) y **RELIEVE** (opacidad del relieve sobre la imagen) | BACK en rojo |
+| Arriba, en línea | Datos clave de la salida; clic en uno abre su detalle | Fichas oscuras |
+| Columna derecha | **Módulos** (TÉRMICO, GEOTOPOLÓGICO, TRACE ROUTE, DATOS) y capa **BASE** | El módulo activo, en dorado con ▶ |
+| Abajo a la izquierda | Herramientas de la ruta: **EDITAR RUTA**, **CENTRAR** | Botones oscuros con icono |
+| Dock inferior | PLAY, barra de tiempo y **apartados** (PLAN, EN RUTA, PRONÓSTICO, PERFIL, RADIACIÓN, AYUDA) | El apartado abierto, en dorado |
+
+Acciones principales (MEJOR SALIDA, PASAR POR AQUÍ, LANZAR ROVER): en rojo.
+
 ## Qué hay en cada pestaña
 
 | Pestaña | Qué hace |
 |---|---|
-| **TÉRMICO** | Ruta coloreada por la temperatura del aire (peor caso 95 %) a la hora de paso. Veredicto GO / PRECAUCIÓN / NO-GO, mejor hora de salida, batería, radiación. |
+| **TÉRMICO** | Ruta coloreada por la temperatura del aire (peor caso 95 %) a la hora de paso. Veredicto GO / PRECAUCIÓN / NO-GO, mejor hora de salida, batería. Apartado **RADIACIÓN**: dosis acumulada en vivo (con PLAY), desglose conducción/paradas y equivalencias. |
 | **GEOTOPOLÓGICO** | Relieve, pendiente con signo, tramos intransitables (> 25°), perfil de elevación. |
 | **TRACE YOUR ROUTE!** | Misión jugable: traza la ruta ida y vuelta, Route Safety Score, **OPTIMIZAR RUTA** (A* sobre el DEM), lanza el rover. |
 | **DATOS** | De dónde sale la temperatura: REMS + proceso gaussiano, validación. |

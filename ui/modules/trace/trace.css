@@ -8,7 +8,7 @@
 .trrover::after { content: ''; position: absolute; inset: -14px; box-shadow: 0 0 0 2px var(--ast-orange); animation: ping 1.6s steps(6) infinite; }
 #map.tredit, #map.tredit .leaflet-interactive { cursor: crosshair; }
 
-#mod-trace .tbar { position: fixed; top: var(--toph, 84px); left: 18px; right: calc(var(--panel-w) + 30px); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 800; pointer-events: none; }
+#mod-trace .tbar { position: fixed; top: var(--toph, 84px); left: 18px; right: calc(var(--panel-w) + var(--rail-w, 320px) + 50px); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 800; pointer-events: none; }
 #mod-trace .tbar > * { pointer-events: auto; }
 #mod-trace .brand { display: flex; flex-direction: column; margin-right: 6px; }
 #mod-trace .brand b { font-weight: normal; font-size: 30px; color: var(--ast-orange); line-height: 1; text-shadow: 3px 3px 0 var(--ast-abyss); }

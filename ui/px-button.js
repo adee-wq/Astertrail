@@ -20,6 +20,10 @@
   const VARIANTS = {
     blue:   { hi: PAL.sky,    face: PAL.blue, lo: PAL.navy,  glint: '#bfe6ff', hover: '#3a95db', dark: '#10294a' },
     danger: { hi: PAL.orange, face: PAL.red,  lo: PAL.blood, glint: '#ffb27a', hover: '#c8340a', dark: '#2a0406' },
+    // herramientas del mapa: cara oscura y texto claro (se distinguen de la navegación y de las acciones principales)
+    tool:   { hi: '#2e5a8a', face: '#0b2445', lo: '#06172e', glint: '#51b4f5', hover: '#163a66', dark: '#030c1a', text: '#bfe6ff' },
+    // activo / seleccionado (apartado abierto, módulo actual)
+    on:     { hi: '#ffe27a', face: '#f2a906', lo: '#8a5a00', glint: '#fff3c4', hover: '#ffbf2a', dark: '#3d2800' },
   };
   const DISABLED = { hi: '#3a5a80', face: PAL.navy, lo: '#0d2440', glint: '#5f7fa6', hover: PAL.navy, dark: '#081a30', text: '#5f7fa6' };
   const SCALE = { xs: 2, sm: 3, md: 4, lg: 5 };
@@ -32,6 +36,29 @@
             '.###.###.', '###...###', '##.....##'],
     back:  ['...#.....', '..##.....', '.########', '#########', '.########', '..##.....',
             '...#.....', '.........', '.........'],
+    thermo:   ['...##....', '..#..#...', '..#.##...', '..#..#...', '..#.##...', '..####...', '.######..', '.######..', '..####...'],
+    mountain: ['.........', '....#....', '...###...', '...####..', '..######.', '..#######', '.########', '#########', '#########'],
+    flag:     ['.####....', '.######..', '.#######.', '.######..', '.####....', '.#.......', '.#.......', '.#.......', '###......'],
+    data:     ['.........', '.......##', '.......##', '....##.##', '....##.##', '.##.##.##', '.##.##.##', '.##.##.##', '#########'],
+    image:    ['#########', '#.......#', '#.##....#', '#.##....#', '#.....#.#', '#..#.####', '#.#######', '#########', '.........'],
+    pencil:   ['......##.', '.....####', '....####.', '...####..', '..####...', '.####....', '.###.....', '##.......', '#........'],
+    target:   ['....#....', '..#####..', '.#..#..#.', '.#.....#.', '####.####', '.#.....#.', '.#..#..#.', '..#####..', '....#....'],
+    play:     ['##.......', '####.....', '######...', '########.', '#########', '########.', '######...', '####.....', '##.......'],
+    pause:    ['###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '###...###', '###...###'],
+    plan:     ['..#####..', '#########', '#.......#', '#.#.###.#', '#.......#', '#.#.###.#', '#.......#', '#.#.###.#', '#########'],
+    astro:    ['..#####..', '.#.....#.', '.#.###.#.', '.#.....#.', '..#####..', '.#######.', '#.#####.#', '..##.##..', '..##.##..'],
+    sun:      ['....#....', '.#.....#.', '...###...', '..#####..', '#.#####.#', '..#####..', '...###...', '.#.....#.', '....#....'],
+    profile:  ['.........', '......#..', '.....#.#.', '..#.#...#', '.#.#.....', '#........', '.........', '#########', '.........'],
+    rad:      ['.##...##.', '###...###', '####.####', '....#....', '...###...', '....#....', '..#####..', '..#####..', '...###...'],
+    help:     ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
+    undo:     ['..#......', '.##......', '#######..', '.##....#.', '..#.....#', '........#', '........#', '.......#.', '..#####..'],
+    trash:    ['...###...', '#########', '.#.....#.', '.#.#.#.#.', '.#.#.#.#.', '.#.#.#.#.', '.#.#.#.#.', '.#.....#.', '..#####..'],
+    star:     ['....#....', '....#....', '...###...', '#########', '.#######.', '..#####..', '..##.##..', '.##...##.', '.#.....#.'],
+    home:     ['....#....', '...###...', '..#####..', '.#######.', '#########', '.##...##.', '.##.#.##.', '.##.#.##.', '.#######.'],
+    route:    ['#........', '##.......', '.#.......', '.##..###.', '..#.#...#', '..###...#', '.......#.', '......#..', '.....###.'],
+    eye:      ['.........', '..#####..', '.#.....#.', '#..###..#', '#..###..#', '#..###..#', '.#.....#.', '..#####..', '.........'],
+    rocket:   ['....#....', '...###...', '...#.#...', '...###...', '...###...', '..#####..', '.##.#.##.', '....#....', '...#.#...'],
+    speed:    ['.........', '#...#....', '##..##...', '###.###..', '########.', '###.###..', '##..##...', '#...#....', '.........'],
   };
 
   const GLYPHS = {
@@ -113,7 +140,7 @@
   // ---- dibujo de un estado ----
   // state: normal | hover | active | disabled
   function draw(mask, minW, col, state, textCol) {
-    const padX = mask.icon ? 3 : 6, padY = 3;
+    const padX = mask.icon ? 3 : mask.mixed ? 5 : 6, padY = 3;
     const W = Math.max(minW, mask.w + padX * 2 + 4);           // 4 = contorno(2) + columnas de bisel(2)
     const H = 1 + 1 + 2 + padY + mask.h + padY + 2 + 1;        // contorno, brillo, franja, ..., sombra, contorno
     const c = document.createElement('canvas'); c.width = W; c.height = H;
@@ -160,10 +187,15 @@
     const variant = VARIANTS[btn.dataset.variant] || VARIANTS.blue;
     const icon = btn.dataset.icon;
     let mask;
-    if (icon) { mask = iconMask(icon); mask.icon = true; }
-    else { if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim(); mask = textMask(btn.dataset.label.toUpperCase()); }
-    const minW = icon ? mask.h + 3 * 2 + 4 + 2 : 0;
-    const text = PAL.abyss;
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+    const label = btn.dataset.label;
+    if (icon && label) {                                   // icono + texto (el texto, centrado en la altura del icono)
+      const im = iconMask(icon), tm = textMask(label.toUpperCase()), off = im.w + 5;
+      mask = { w: off + tm.w, h: im.h, mixed: true, px: im.px.concat(tm.px.map(([x, y]) => [x + off, y + 1])) };
+    } else if (icon) { mask = iconMask(icon); mask.icon = true; }
+    else mask = textMask(label.toUpperCase());
+    const minW = Math.max(icon && !label ? mask.h + 3 * 2 + 4 + 2 : 0, +btn.dataset.minw || 0);   // data-minw: ancho mínimo en px de arte (botones de igual ancho)
+    const text = variant.text || PAL.abyss;
     const imgs = {
       normal: draw(mask, minW, variant, 'normal', text),
       hover: draw(mask, minW, variant, 'hover', text),
