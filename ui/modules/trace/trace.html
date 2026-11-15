@@ -69,6 +69,11 @@
   .modal { position: fixed; inset: 0; z-index: 2000; background: rgba(2,12,29,.78); display: grid; place-items: center; }
   .modal .px-panel { width: min(760px, 94vw); max-height: 90vh; overflow-y: auto; }
   .modal h2 { font-weight: normal; font-size: 44px; margin: 0 0 6px; }
+  .medals { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .medal { font-size: 18px; padding: 2px 8px; color: #5f7fa6; box-shadow: 0 0 0 2px #17365e; background: rgba(4,23,52,.6); }
+  .medal.on { color: var(--ast-abyss); background: #f2c206; box-shadow: 0 0 0 2px #fff3b0; }
+  .medal.new { animation: blink .5s steps(2) 6; }
+  @keyframes blink { 50% { background: #f26306; } }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
   @media (max-width: 900px) { body { --side: 18px; } aside { top: auto; height: 40vh; width: auto; left: 10px; } .timebar { bottom: calc(40vh + 24px); } .grid2 { grid-template-columns: 1fr; } }
 </style>
@@ -85,6 +90,7 @@
 <script src="terrain.js"></script>
 <script src="rss.js"></script>
 <script src="missions.js"></script>
+<script src="gamification.js"></script>
 </head>
 <body>
   <div id="map"></div>
@@ -121,6 +127,13 @@
     </section>
 
     <section class="px-panel">
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PROGRESO</span></div>
+      <div class="row"><span class="k">mejor RSS (misión cumplida)</span><b id="gBest">--</b></div>
+      <div class="row"><span class="k">intentos</span><b id="gN">0</b></div>
+      <div class="medals" id="gMed"></div>
+    </section>
+
+    <section class="px-panel">
       <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">CÓMO JUGAR</span></div>
       <p class="txt"><b style="color:#f26306;font-weight:normal">TRAZAR</b>: clic en el mapa para poner waypoints desde la base. Arrastra un waypoint para moverlo; doble clic para borrarlo; clic sobre un tramo para insertar uno. <b style="color:#f26306;font-weight:normal">VOLVER A BASE</b> cierra la ruta.</p>
       <p class="txt">Los tramos se colorean por seguridad (P): verde seguro, naranja precaución, rojo peligroso o intransitable.</p>
@@ -143,6 +156,7 @@
       <div class="grid2" id="rRows"></div>
       <div class="obj" id="rObj" style="margin-top:8px"></div>
       <div id="rRec" style="margin-top:8px"></div>
+      <div id="rGame" style="margin-top:8px"></div>
       <div class="btns"><button class="px-btn" data-size="md" data-variant="danger" id="again">REPLANIFICAR</button>
         <button class="px-btn" data-size="md" id="toMap">VOLVER AL MAPA</button></div>
     </section>
@@ -243,7 +257,16 @@ function panel() {
   $('launch').disabled = blocked || !!running;
   $('hint').textContent = running ? 'SIMULANDO…' : editing ? 'TRAZANDO: clic = waypoint · arrastra · doble clic borra' : '';
 }
-function changed() { saveState(); evaluate(); drawRoute(); panel(); }
+function medalsHtml(med, nuevas) {
+  return TraceGame.MEDALLAS.map((m) => `<span class="medal ${med[m.id] ? 'on' : ''} ${nuevas && nuevas.includes(m) ? 'new' : ''}" title="${m.desc}">${m.nombre}</span>`).join('');
+}
+function progressPanel() {
+  const g = TraceGame.progress(loadState(), M.id);
+  $('gBest').textContent = g.mejor ? `${g.mejor.rss} · ${g.mejor.clase}` : '--';
+  $('gN').textContent = g.total || 0;
+  $('gMed').innerHTML = medalsHtml(g.medallas);
+}
+function changed() { saveState(); evaluate(); drawRoute(); panel(); progressPanel(); }
 
 /* ---------- Rover Simulator: reproducción ---------- */
 function sampleAt(t) {
@@ -306,6 +329,18 @@ function finish() {
   $('rObj').innerHTML = '<div class="k">OBJETIVOS</div>' + objs.map((o) => `<div><span class="${o.ok ? 'ok' : 'no'}">${o.ok ? '[✓]' : '[✕]'}</span> ${o.txt}</div>`).join('');
   $('rRec').innerHTML = '<div class="k">RECOMENDACIONES</div>' + recs.map((x) => `<div class="msg warn">${x}</div>`).join('') +
     (ev.peores.length ? `<p class="note">Tramos de mayor riesgo: ${ev.peores.map((s) => `${s.i} (R ${s.R.toFixed(0)})`).join(' · ')}</p>` : '');
+  // Gamification Manager: registrar el intento (estado propio del módulo)
+  const g = TraceGame.record(loadState(), M.id, { ok, rss: ev.rss, clase: ev.clase, dist_m: dEnd, dur_s: tEnd,
+    soc: r.failAt ? r.failAt.SOC : S.SOC_end, criticos: ev.criticos.length, n_wp: route.length });
+  try { localStorage.setItem(STORE, JSON.stringify(g.estado)); } catch (e) {}
+  const prevBest = g.intentos.length > 1 ? Math.max(...g.intentos.slice(0, -1).filter((x) => x.ok).map((x) => x.rss), -1) : -1;
+  $('rGame').innerHTML = `<div class="k">MEDALLAS ${g.nuevas.length ? `· ¡${g.nuevas.length} NUEVA${g.nuevas.length > 1 ? 'S' : ''}!` : ''}</div>` +
+    `<div class="medals">${medalsHtml(g.medallas, g.nuevas)}</div>` +
+    (g.record ? `<div class="msg ok">¡NUEVO RÉCORD! Superaste tu mejor RSS (${prevBest}).</div>` : '') +
+    `<div class="k" style="margin-top:6px">COMPARACIÓN DE INTENTOS</div><table class="segs"><tr><th>#</th><th>estado</th><th>RSS</th><th>km</th><th>tiempo</th><th>bat.</th><th>críticos</th></tr>` +
+    g.intentos.slice().reverse().map((x, j) => `<tr class="${j === 0 ? '' : ''}" style="${j === 0 ? 'color:#e8f4ff' : ''}"><td>${x.n}${j === 0 ? ' ◀' : ''}</td><td>${x.ok ? 'OK' : 'FALLO'}</td><td style="color:${colRSS(x.rss)}">${x.rss}</td><td>${(x.dist_m / 1000).toFixed(2)}</td><td>${fmtMin(x.dur_s)}</td><td>${Math.round(x.soc * 100)}%</td><td>${x.criticos}</td></tr>`).join('') + '</table>' +
+    (g.mejor ? `<p class="note">Mejor marca: RSS ${g.mejor.rss} (${g.mejor.clase}), intento ${g.mejor.n}.</p>` : '');
+  progressPanel();
   $('modal').hidden = false; document.querySelectorAll('#modal .px-btn').forEach((b) => PxButton.render(b));
   panel();
 }
