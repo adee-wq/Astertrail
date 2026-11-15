@@ -191,7 +191,8 @@ const CONFIG = {
   ],
   // Ruta demo [lat, lon] dentro de la cobertura HiRISE y de la caché offline (ui/tiles).
   rutaDemo: [[-4.7050, 137.3550], [-4.7120, 137.3620], [-4.7160, 137.3710], [-4.7240, 137.3760],
-             [-4.7310, 137.3850], [-4.7380, 137.3910], [-4.7440, 137.3990]],
+             [-4.7310, 137.3850], [-4.7380, 137.3910], [-4.7430, 137.3995]],
+  // (con FIN en [-4.7440, 137.3990] la ruta cruza un escarpe de 31.5° → NO-GO; útil para la demo)
   segundosAnimacion: 20,     // PLAY recorre toda la misión en este tiempo
 };
 const STORE = 'astertrail.ruta.geo';   // [lat, lon]; la clave vieja (píxeles) ya no se usa
