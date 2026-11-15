@@ -37,9 +37,9 @@ En TÉRMICO, GEOTOPOLÓGICO y TRACE hay **paradas científicas** (rombos amarill
 qué medir, tiempo de parada, fuente y una foto real de Curiosity del sitio. Si la ruta pasa a ≤ 150 m, el tiempo de
 parada se suma a la duración (y gasta calefacción y auxiliares). **PASAR POR AQUÍ** mete la parada en la ruta.
 
-## Presentación (pitch de 6 min)
+## Presentación (pitch de 4 min · 3 personas)
 
-Abre `presentacion/index.html` (sin internet). Teclas: ← → o clic para avanzar · **F** pantalla completa · **N** notas del orador · **T** cronómetro de 6 min.
+Abre `presentacion/index.html` (sin internet). Teclas: ← → o clic para avanzar · **F** pantalla completa · **N** notas del orador · **T** cronómetro de 4 min. Guion por persona y tiempos: `presentacion/guion.md`.
 
 ## Qué es dato real y qué es estimado
 

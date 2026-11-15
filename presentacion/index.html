@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marswalk · Pitch</title>
-<!-- Presentación de 7 diapositivas (6 min). Funciona sin internet.
+<!-- Presentación de 7 diapositivas: pitch de 4 min para 3 personas (diseñadora 1 · programador · diseñadora 2). Funciona sin internet.
      ← → / espacio / clic: avanzar · F: pantalla completa · N: notas del orador · T: cronómetro · Inicio/Fin -->
 <style>
   @font-face { font-family: 'Jersey 10'; src: url('../ui/fonts/jersey10-latin.woff2') format('woff2'); font-display: swap; }
@@ -140,7 +140,7 @@
   #bar { position: fixed; left: 0; bottom: 0; height: 4px; background: var(--or); transition: width .4s; z-index: 10; }
   #hud { position: fixed; right: 16px; bottom: 12px; font: 20px var(--px); color: rgba(255,255,255,.45); z-index: 10; letter-spacing: 2px; }
   #timer { position: fixed; left: 16px; bottom: 12px; font: 22px var(--px); color: rgba(255,255,255,.55); z-index: 10; letter-spacing: 2px; display: none; }
-  #timer.over { color: var(--nogo); }
+  #timer.over { color: var(--nogo); } #timer.late { color: #f2c206; }
   #notes { position: fixed; left: 0; right: 0; bottom: 0; max-height: 34vh; overflow: auto; background: rgba(4,10,22,.94); border-top: 2px solid var(--or);
            padding: 16px 24px 30px; font-size: 18px; line-height: 1.45; color: #dfe7f0; z-index: 9; display: none; }
   #notes b { color: var(--or2); }
@@ -154,7 +154,7 @@
 <div id="stage">
 
   <!-- ========== 1 · PORTADA + GANCHO ========== -->
-  <section class="slide" id="s1" data-time="0:00–0:30">
+  <section class="slide" id="s1" data-time="0:00–0:20" data-who="DISEÑADORA 1" data-end="20">
     <div class="photo"></div>
     <div class="c">
       <div class="kicker rise">Astertrail</div>
@@ -164,11 +164,11 @@
       <div class="foot rise">NASA SPACE APPS CHALLENGE</div>
     </div>
     <div class="credit">Murray Buttes, cráter Gale · Mastcam, sol 1454 · NASA/JPL-Caltech/MSSS</div>
-    <div class="note"><b>0:00–0:30 · Gancho.</b> «En la Tierra, si sales a caminar y hace frío, vuelves a casa. En Marte, si calculas mal el frío, la batería o la pendiente, no vuelves. Marswalk le dice a un astronauta cuándo salir, por dónde ir y si podrá regresar, antes de abrir la escotilla.» La foto de fondo es real: Curiosity en Murray Buttes.</div>
+    <div class="note"><b>0:00–0:20 · DISEÑADORA 1 · Gancho</b><br>«En la Tierra, si sales a caminar y hace frío, vuelves a casa. En Marte, si calculas mal el frío, la batería o la pendiente, <b>no vuelves</b>. Somos Astertrail y esto es <b>Marswalk</b>: le dice a un astronauta cuándo salir, por dónde ir y si podrá regresar.»<br><i>→ Avanza sin pausa.</i></div>
   </section>
 
   <!-- ========== 2 · EL PROBLEMA ========== -->
-  <section class="slide" id="s2" data-time="0:30–1:15">
+  <section class="slide" id="s2" data-time="0:20–0:55" data-who="DISEÑADORA 1" data-end="55">
     <div class="photo"></div>
     <div class="crit">CRITERIO · <b>RELEVANCIA</b></div>
     <div style="position:relative">
@@ -182,11 +182,11 @@
     </div>
     <div class="method"><b>Design Thinking:</b> empatizamos con el astronauta y delimitamos el problema a una salida real: el cráter Gale en el sol 1520, donde estaba Curiosity (nov. 2016).</div>
     <div class="tag"><span>Los riesgos no ocurren por separado.</span><span class="or">Deben evaluarse en conjunto.</span></div>
-    <div class="note"><b>0:30–1:15 · Problema.</b> Frío, pendiente, batería y retraso de comunicación cambian a la vez. Hoy se planifica con hojas de cálculo y expertos en la Tierra; la tripulación necesita decidir allí. Cifras: mínima del pronóstico ≈ 200 K; límite de pendiente del vehículo 25°; reserva del 20 %.</div>
+    <div class="note"><b>0:20–0:55 · DISEÑADORA 1 · Problema</b><br>«Una salida en Marte depende de cuatro riesgos a la vez. <b>El frío</b>: de madrugada, el cráter Gale baja a unos menos setenta y tres grados. <b>El terreno</b>: hay cuestas de más de veinticinco grados que el vehículo no puede subir. <b>La batería</b>: hay que volver con al menos un veinte por ciento. Y la Tierra está a entre <b>cuatro y veinticuatro minutos</b> por radio: la decisión se toma allí. Nuestro programador les cuenta cómo lo resolvimos.»<br><i>→ RELEVO al programador (mirarlo al decir la última frase).</i></div>
   </section>
 
   <!-- ========== 3 · SOLUCIÓN + DATOS ABIERTOS ========== -->
-  <section class="slide" id="s3" data-time="1:15–2:15">
+  <section class="slide" id="s3" data-time="0:55–1:35" data-who="PROGRAMADOR" data-end="95">
     <div class="crit">CRITERIO · <b>VALIDEZ · CIENCIA ABIERTA</b></div>
     <div>
       <h2 class="rise">Una sola plataforma.<br><span class="or">Siete fuentes de datos abiertos.</span></h2>
@@ -207,11 +207,11 @@
       <div class="mapshot rise"><img src="../capturas/1-termico.png" alt="Las capas cruzadas en el mapa TÉRMICO"><span>Todo cruzado en un mapa: ruta coloreada por temperatura a la hora de paso + paradas científicas</span></div>
     </div>
     <div class="bottom">Ciencia abierta de la NASA y agencias aliadas (ESA, CAB-INTA), cruzada en <b class="or">un solo mapa que funciona sin internet</b>.</div>
-    <div class="note"><b>1:15–2:15 · Solución y datos.</b> Recorrer las fuentes: imagen HiRISE de Mars Trek, relieve del USGS, MOLA + HRSC de la ESA, temperatura REMS (instrumento español del CAB-INTA), waypoints y fotos reales de Curiosity, radiación del RAD. Todo funciona en el navegador sin internet: encaja con el retraso de Marte.</div>
+    <div class="note"><b>0:55–1:35 · PROGRAMADOR · Datos abiertos</b><br>«Marswalk cruza <b>siete fuentes de datos abiertos</b> en un solo mapa. La imagen del terreno es HiRISE, a sesenta centímetros por píxel; el relieve, el modelo del USGS; la temperatura, la estación REMS de Curiosity. Y también usamos los waypoints oficiales del rover, sus fotos reales y su medidor de radiación. Datos de la NASA, la ESA y el CAB español. Y todo corre en el navegador, <b>sin internet</b>, porque en Marte no hay nube.»<br><i>→ Señalar la tira de fotos al decir «fotos reales».</i></div>
   </section>
 
   <!-- ========== 4 · CÓMO DECIDE + VALIDACIÓN ========== -->
-  <section class="slide" id="s4" data-time="2:15–3:00">
+  <section class="slide" id="s4" data-time="1:35–2:15" data-who="PROGRAMADOR" data-end="135">
     <div class="crit">CRITERIO · <b>VALIDEZ</b></div>
     <div>
       <h2 class="rise">Decidimos con el <span class="or">peor caso</span>,<br>no con el promedio.</h2>
@@ -233,11 +233,11 @@
       </div>
 
     </div>
-    <div class="note"><b>2:15–3:00 · Validez.</b> No decidimos con la media: si el modelo duda, se vuelve más prudente. Validado con datos ocultos: 3,2 K de error, y el 95 % de los datos reales cae dentro de su banda del 95 %. Probamos también una red neuronal: 475 veces más rápida pero casi tres veces menos precisa; elegimos precisión.</div>
+    <div class="note"><b>1:35–2:15 · PROGRAMADOR · Validación</b><br>«La clave es cómo decide. Pronosticamos la temperatura de 72 horas con un <b>proceso gaussiano</b>, un modelo que además dice cuánto se fía de sí mismo. Y decidimos con el <b>peor caso</b>, no con el promedio. ¿Funciona? Lo probamos contra datos reales que el modelo nunca vio: error medio de <b>tres coma dos kelvin</b>, y el <b>noventa y cinco por ciento</b> de los datos cae dentro de su margen. Una red neuronal era 475 veces más rápida, pero casi tres veces menos precisa: elegimos precisión.»<br><i>→ Si vas tarde, salta la frase de la red neuronal.</i></div>
   </section>
 
   <!-- ========== 5 · DEMO: TRACE YOUR ROUTE! ========== -->
-  <section class="slide" id="s5" data-time="3:00–4:30">
+  <section class="slide" id="s5" data-time="2:15–2:55" data-who="PROGRAMADOR" data-end="175">
     <div class="crit">CRITERIO · <b>CREATIVIDAD</b></div>
     <h2 class="rise" style="margin-bottom:6px">TRACE YOUR ROUTE! <span class="or" style="font-weight:600">Find the Water Signs.</span></h2>
     <p class="lead rise">Llegar a los minerales hidratados del monte Sharp y volver a la base con al menos un 20 % de batería.</p>
@@ -248,11 +248,11 @@
     </div>
     <div class="live rise"><span class="pill">EN VIVO</span><span>Ruta de 4 km · salida <b>09:00</b> → llegada <b>10:53</b> · parada de 45 min en las arcillas de Glen Torridon · <b class="go">GO</b> · batería <b>85 %</b> · peor caso <b>−45 °C</b> · radiación <b>54 µSv</b> (≈ media radiografía de tórax).</span></div>
     <div class="tag" style="bottom:44px"><span>No solo encontramos rutas.</span><span class="or">Evaluamos cuál conviene seguir.</span></div>
-    <div class="note"><b>3:00–4:30 · Demo.</b> Cambiar a la app (ui/index.html). 1) TÉRMICO: ruta coloreada por la temperatura a la hora de paso; MEJOR SALIDA. 2) Clic en un rombo amarillo: ficha con foto real; PASAR POR AQUÍ. 3) RADIACIÓN + PLAY: la dosis sube en vivo. 4) TRACE: OPTIMIZAR RUTA → USAR ÓPTIMA → LANZAR ROVER → MISIÓN CUMPLIDA.</div>
+    <div class="note"><b>2:15–2:55 · PROGRAMADOR · Demo TRACE</b><br>«Así se ve en la misión. La ruta recta cruza una cuesta de más de veinticinco grados: <b>NO-GO</b>. Pulsamos optimizar y el algoritmo A estrella encuentra, en 137 milisegundos, una ruta de cuatro kilómetros de ida y vuelta con noventa por ciento de batería: <b>misión cumplida</b>. Y el sistema elige la mejor hora para salir. No solo encontramos rutas: <b>evaluamos cuál conviene seguir</b>. Les dejo con nuestra diseñadora.»<br><i>→ RELEVO a la diseñadora 2. La demo en vivo (ui/index.html) se reserva para las preguntas.</i></div>
   </section>
 
   <!-- ========== 6 · IMPACTO Y PROYECCIÓN ========== -->
-  <section class="slide" id="s6" data-time="4:30–5:30">
+  <section class="slide" id="s6" data-time="2:55–3:25" data-who="DISEÑADORA 2" data-end="205">
     <div class="crit">CRITERIO · <b>IMPACTO</b></div>
     <h2 class="rise">Un prototipo con datos reales.<br><span class="or">El motor ya funciona.</span></h2>
     <p class="lead rise">Los datos de Marte son reales; el vehículo es una referencia que se cambia en un archivo.</p>
@@ -263,11 +263,11 @@
     </div>
     <div class="honest rise"><div><b class="go">REAL</b> relieve (USGS) · imagen (HiRISE/CTX) · temperatura (REMS) · posiciones y fotos de Curiosity · tasa de radiación (RAD)</div><div><b class="or">ESTIMADO</b> vehículo (ref. Apolo) · factor de tiempo 1,3 · duración de las paradas · objetivo de la misión TRACE</div></div>
     <div class="users rise">Para: <span>Planificadores de misión</span><span>Misiones análogas (MDRS · HI-SEAS)</span><span>Educación y museos</span></div>
-    <div class="note"><b>4:30–5:30 · Impacto.</b> Ser honestos: prototipo. Lo real: relieve, imagen, temperatura, posiciones, fotos, tasa de radiación. Lo estimado: vehículo (referencia Apolo), factor de tiempo 1,3, duración de las paradas. El mismo motor sirve para la Luna cambiando el relieve. TRACE ya funciona hoy como herramienta educativa.</div>
+    <div class="note"><b>2:55–3:25 · DISEÑADORA 2 · Impacto</b><br>«Esto es un prototipo, y lo decimos claro: <b>los datos de Marte son reales</b>; el vehículo es una referencia, el rover lunar del Apolo, y se cambia en un archivo. Lo siguiente es cargar vehículos reales, añadir tormentas de polvo y alertas solares, y llevar el mismo motor a <b>la Luna con Artemis</b>. Y ya sirve hoy para misiones de entrenamiento en la Tierra y para educación.»<br><i>→ Avanza al cierre.</i></div>
   </section>
 
   <!-- ========== 7 · CIERRE ========== -->
-  <section class="slide" id="s7" data-time="5:30–6:00">
+  <section class="slide" id="s7" data-time="3:25–3:40" data-who="DISEÑADORA 2" data-end="220">
     <div class="photo"></div>
     <div class="c">
       <div class="kicker rise">Marswalk · Astertrail</div>
@@ -276,7 +276,7 @@
       <div class="motto rise">EXPLORAR · DESCUBRIR · REGRESAR</div>
     </div>
     <div class="credit">Contacto Murray/Stimson, cráter Gale · Navcam, sol 1433 · NASA/JPL-Caltech (coloreada)</div>
-    <div class="note"><b>5:30–6:00 · Cierre.</b> «Curiosity tarda meses en recorrer lo que un astronauta haría en una tarde. Cuando lleguemos a Marte, cada salida contará. Marswalk convierte datos abiertos de la NASA en una decisión simple: sal ahora, por aquí, y vuelve a salvo. Es un prototipo, pero el motor ya funciona.» Gracias.</div>
+    <div class="note"><b>3:25–3:40 · DISEÑADORA 2 · Cierre</b><br>«Cuando lleguemos a Marte, cada salida contará. Marswalk convierte datos abiertos de la NASA en una decisión simple: <b>sal ahora, por aquí, y vuelve a salvo</b>. Explorar, descubrir, regresar. Gracias.»<br><i>→ Quedan ~20 s de margen hasta 4:00. Los tres al frente para preguntas.</i></div>
   </section>
 
 </div>
@@ -291,7 +291,7 @@ function go(n) {
   i = Math.max(0, Math.min(S.length - 1, n));
   S.forEach((s, k) => s.classList.toggle('on', k === i));
   document.getElementById('bar').style.width = ((i + 1) / S.length * 100) + '%';
-  document.getElementById('hud').textContent = `${i + 1} / ${S.length} · ${S[i].dataset.time}`;
+  document.getElementById('hud').textContent = `${i + 1} / ${S.length} · ${S[i].dataset.time} · ${S[i].dataset.who}`;
   document.getElementById('notes').innerHTML = S[i].querySelector('.note').innerHTML;
   try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
 }
@@ -299,7 +299,11 @@ function timer() {
   const el = document.getElementById('timer');
   if (tick) { clearInterval(tick); tick = null; el.style.display = 'none'; return; }
   t0 = Date.now(); el.style.display = 'block';
-  tick = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} / 6:00`; el.classList.toggle('over', s > 360); }, 250);
+  tick = setInterval(() => {   // total 4:00 (guion 3:40 + 20 s de margen); ámbar si vas tarde respecto a la diapositiva actual
+    const s = Math.floor((Date.now() - t0) / 1000), late = s > +S[i].dataset.end + 5;
+    el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} / 4:00${late ? ' · VAS TARDE' : ''}`;
+    el.classList.toggle('late', late && s <= 240); el.classList.toggle('over', s > 240);
+  }, 250);
 }
 addEventListener('keydown', (e) => {
   if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); go(i + 1); }
