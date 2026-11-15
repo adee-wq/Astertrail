@@ -28,11 +28,13 @@
   };
 
   const OFFLINE = /[?&]offline=1\b/.test(location.search);
+  // carpeta de este script: permite usar las capas desde páginas en subcarpetas (p. ej. modules/trace/)
+  const BASE = (typeof document !== 'undefined' && document.currentScript) ? document.currentScript.src.replace(/layers\.js(\?.*)?$/, '') : '';
   const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
   function url(key) {
     const c = LAYERS[key];
-    return OFFLINE ? `tiles/${c.id}/{z}/{y}/{x}.${c.ext}`
+    return OFFLINE ? `${BASE}tiles/${c.id}/{z}/{y}/{x}.${c.ext}`
                    : `${TREK}${c.id}/1.0.0/default/default028mm/{z}/{y}/{x}.${c.ext}`;
   }
 

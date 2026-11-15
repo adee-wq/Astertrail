@@ -59,7 +59,7 @@
     for (let i = 1; i < route.length; i++) {
       const a = route[i - 1], b = route[i], L = dist(a, b);
       if (L === 0) continue;
-      for (let D = ds * (Math.floor(acc / ds + 1e-9) + 1); D < acc + L - 1e-6; D += ds) {   // múltiplos globales de ds
+      for (let D = ds * (Math.floor(acc / ds + 1e-9) + 1); D < acc + L - 0.25 * ds; D += ds) {   // múltiplos globales de ds (sin puntos pegados al vértice)
         const u = (D - acc) / L; out.push({ lat: a[0] + (b[0] - a[0]) * u, lon: a[1] + (b[1] - a[1]) * u, dist: D });
       }
       acc += L; out.push({ lat: b[0], lon: b[1], dist: acc });
@@ -102,7 +102,9 @@
     // pendiente con signo (a lo largo de la marcha) y curvatura κ = Δrumbo / Δs (ventana de ±w muestras)
     const w = Math.max(1, Math.round(5 / V.ds));   // ventana ±5 m: giro de radio pequeño (LRV ≈ 3 m)
     for (let i = 0; i < n; i++) {
-      const a = s[Math.max(0, i - 1)], b = s[Math.min(n - 1, i + 1)];
+      let ja = Math.max(0, i - 1), jb = Math.min(n - 1, i + 1);          // base de al menos ds metros
+      while (s[jb].dist - s[ja].dist < V.ds && (ja > 0 || jb < n - 1)) { if (ja > 0) ja--; if (jb < n - 1) jb++; }
+      const a = s[ja], b = s[jb];
       const dd = b.dist - a.dist;
       s[i].theta = dd > 0 ? Math.atan((b.elevS - a.elevS) / dd) : 0;
       const i0 = Math.max(0, i - w), i1 = Math.min(n - 1, i + w);
