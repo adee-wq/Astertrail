@@ -1,0 +1,102 @@
+/* =========================================================
+   Astertrail · PxButton v2 (pixel art real) — va junto a px-button.js
+   El JS dibuja cada estado como imagen de baja resolución; este CSS
+   solo la escala sin suavizado y cambia de imagen según el estado.
+   ========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Jersey+10&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jersey+10&display=swap');
+
+
+:root {
+  --ast-blood:  #48090b;
+  --ast-red:    #a10a04;
+  --ast-orange: #f26306;
+  --ast-sky:    #51b4f5;
+  --ast-blue:   #2276c0;
+  --ast-navy:   #17365e;
+  --ast-abyss:  #041734;
+  --px-font: 'Jersey 10', 'Courier New', monospace;
+}
+
+.px-btn {
+  --px-s: 4px;
+  display: inline-block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent var(--img-normal) 0 0 / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  font: 20px var(--px-font);
+  color: transparent;            /* el texto real queda para lectores de pantalla */
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+  visibility: hidden;            /* evita el parpadeo antes de dibujarse */
+}
+.px-btn.px-ready { visibility: visible; }
+.px-btn:hover  { background-image: var(--img-hover); }
+.px-btn:active { background-image: var(--img-active); }
+.px-btn:focus-visible { outline: var(--px-s) solid var(--ast-orange); outline-offset: var(--px-s); }
+.px-btn:disabled,
+.px-btn[aria-disabled="true"] { background-image: var(--img-disabled); cursor: not-allowed; }
+
+
+html, body { margin: 0; height: 100%; }
+body {
+  /* Pon tu fondo aquí: background-image: url('fondo.png'); */
+  background:
+    radial-gradient(ellipse at 50% 55%, #2a0d06 0%, transparent 35%),
+    radial-gradient(ellipse at 50% 50%, #0b1a33 0%, var(--ast-abyss) 70%);
+  background-size: cover;
+  color: var(--ast-sky);
+  font-family: var(--px-font);
+  display: grid; place-items: center;
+}
+.stage { width: min(1100px, 94vw); padding: 32px 0 48px; }
+h1 { font-size: 44px; font-weight: 400; margin: 0 0 4px; color: #e8f4ff; letter-spacing: .04em; }
+p.sub { margin: 0 0 28px; font-size: 22px; color: var(--ast-sky); opacity: .85; }
+section { margin: 0 0 30px; }
+h2 { font-size: 24px; font-weight: 400; margin: 0 0 12px; color: var(--ast-orange); letter-spacing: .06em; }
+.row { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; }
+.note { font-size: 18px; color: #9fc8ea; margin-top: 10px; }
+.log { font-size: 20px; color: #e8f4ff; min-height: 26px; }
+
+
+:root {
+  --ast-blood:  #48090b;
+  --ast-red:    #a10a04;
+  --ast-orange: #f26306;
+  --ast-sky:    #51b4f5;
+  --ast-blue:   #2276c0;
+  --ast-navy:   #17365e;
+  --ast-abyss:  #041734;
+  --px-font: 'Jersey 10', 'Courier New', monospace;
+}
+
+.px-btn {
+  --px-s: 4px;
+  display: inline-block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent var(--img-normal) 0 0 / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  font: 20px var(--px-font);
+  color: transparent;            /* el texto real queda para lectores de pantalla */
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+  visibility: hidden;            /* evita el parpadeo antes de dibujarse */
+}
+.px-btn.px-ready { visibility: visible; }
+.px-btn:hover  { background-image: var(--img-hover); }
+.px-btn:active { background-image: var(--img-active); }
+.px-btn:focus-visible { outline: var(--px-s) solid var(--ast-orange); outline-offset: var(--px-s); }
+.px-btn:disabled,
+.px-btn[aria-disabled="true"] { background-image: var(--img-disabled); cursor: not-allowed; }

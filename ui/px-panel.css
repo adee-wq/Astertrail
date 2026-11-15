@@ -1,0 +1,47 @@
+/* =========================================================
+   Astertrail · PxPanel: marco pixel art para contenido (gráficas, consolas)
+   <section class="px-panel"> ... </section>
+   Usa las variables de color de px-button.css.
+   ========================================================= */
+.px-panel {
+  --u: 4px;
+  position: relative;
+  background: #0a2142;                       /* entre abyss y navy: fondo de pantalla de consola */
+  padding: calc(var(--u) * 5) calc(var(--u) * 6);
+  margin: var(--u);
+  box-shadow:
+    inset 0 0 0 var(--u) var(--ast-navy),                          /* marco interior */
+    inset 0 var(--u) 0 calc(var(--u) * 1) var(--ast-blue),         /* luz arriba */
+    inset 0 calc(var(--u) * -2) 0 0 #071a35,                       /* sombra abajo */
+    0 0 0 var(--u) var(--ast-abyss),                               /* contorno */
+    0 0 0 calc(var(--u) * 2) var(--ast-navy);                      /* bisel exterior */
+  clip-path: polygon(
+    calc(var(--u) * -1) 0, 0 0, 0 calc(var(--u) * -1),
+    calc(100% - 0px) calc(var(--u) * -1), 100% 0, calc(100% + var(--u)) 0,
+    calc(100% + var(--u)) 100%, 100% 100%, 100% calc(100% + var(--u)),
+    0 calc(100% + var(--u)), 0 100%, calc(var(--u) * -1) 100%
+  );
+  image-rendering: pixelated;
+}
+/* tornillos pixel en las esquinas */
+.px-panel::before, .px-panel::after {
+  content: ''; position: absolute; top: calc(var(--u) * 2);
+  width: calc(var(--u) * 2); height: calc(var(--u) * 2);
+  background: var(--ast-blue); box-shadow: var(--u) var(--u) 0 0 var(--ast-abyss);
+}
+.px-panel::before { left: calc(var(--u) * 2); }
+.px-panel::after  { right: calc(var(--u) * 3); }
+
+.px-panel__head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.px-panel__meta { font: 18px/1.2 var(--px-font); color: #9fc8ea; margin-left: auto; text-align: right; }
+
+/* leyenda */
+.px-legend { display: flex; flex-wrap: wrap; gap: 18px 26px; align-items: center; margin-top: 14px; }
+.px-legend__item { display: inline-flex; align-items: center; gap: 10px; }
+.px-swatch { width: 24px; height: 12px; image-rendering: pixelated; box-shadow: 0 0 0 2px var(--ast-abyss); }
+.px-swatch--line { height: 4px; box-shadow: none; }
+.px-swatch--dot  { width: 8px; height: 8px; box-shadow: 0 0 0 2px var(--ast-abyss); }
+
+.px-chart { position: relative; width: 100%; }
+.px-chart canvas { display: block; width: 100%; }
+.px-empty { font: 24px var(--px-font); color: #9fc8ea; padding: 60px 0; text-align: center; }

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Astertrail · Mapa térmico de la misión</title>
+<link rel="stylesheet" href="px-button.css">
+<link rel="stylesheet" href="px-panel.css">
+<style>
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: var(--ast-abyss); color: var(--ast-sky); font-family: var(--px-font); }
+
+  /* ---------- mapa ---------- */
+  #map { position: fixed; inset: 0; overflow: hidden; background: #020c1d; cursor: grab; touch-action: none; }
+  #map.dragging { cursor: grabbing; }
+  #map.edit { cursor: crosshair; }
+  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #world img { display: block; user-select: none; -webkit-user-drag: none; filter: saturate(.85) contrast(1.05); }
+  #world svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  /* rejilla de coordenadas + viñeta: aspecto de pantalla de navegación */
+  #grid { position: fixed; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 45% 50%, transparent 55%, rgba(2,12,29,.75) 100%),
+      repeating-linear-gradient(0deg, rgba(81,180,245,.07) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(90deg, rgba(81,180,245,.07) 0 1px, transparent 1px 64px); }
+  #pins { position: fixed; inset: 0; pointer-events: none; }
+  .pin { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
+  .wp { width: 10px; height: 10px; background: var(--ast-abyss); box-shadow: 0 0 0 2px #e8f4ff; }
+  .wp span { position: absolute; left: 14px; top: -8px; font-size: 18px; color: #e8f4ff; text-shadow: 2px 2px 0 var(--ast-abyss); }
+  .tag { font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 2px 8px;
+         box-shadow: 0 0 0 2px var(--ast-navy); transform: translate(-50%, calc(-100% - 14px)); }
+  .tag.cold { color: #bfe6ff; box-shadow: 0 0 0 2px #7fb2ff; transform: translate(-50%, 16px); }   /* debajo, para no tapar INICIO/FIN */
+  .cold-dot { width: 12px; height: 12px; background: #7fb2ff; box-shadow: 0 0 0 2px var(--ast-abyss), 0 0 0 4px #7fb2ff; }
+  /* astronauta: cuadro naranja con anillo que late */
+  .astro { width: 14px; height: 14px; background: var(--ast-orange); box-shadow: 0 0 0 3px var(--ast-abyss), 0 0 0 5px #e8f4ff; }
+  .astro::after { content: ''; position: absolute; inset: -14px; box-shadow: 0 0 0 2px var(--ast-orange);
+                  animation: ping 1.6s steps(6) infinite; }
+  @keyframes ping { from { opacity: .9; inset: -6px; } to { opacity: 0; inset: -22px; } }
+
+  /* ---------- HUD ---------- */
+  .top { position: fixed; top: 14px; left: 18px; right: 424px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+  .top > * { pointer-events: auto; }
+  .top .spacer { flex: 1; }
+  .hint { font-size: 20px; color: #9fc8ea; text-shadow: 2px 2px 0 var(--ast-abyss); }
+  .demo { font-size: 20px; color: var(--ast-orange); text-shadow: 2px 2px 0 var(--ast-abyss); }
+
+  aside { position: fixed; top: 10px; right: 10px; bottom: 10px; width: 392px; overflow-y: auto; overflow-x: hidden; }
+  aside .px-panel { margin: 8px 8px 16px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 22px; line-height: 1.25; }
+  .row b { font-weight: normal; color: #e8f4ff; white-space: nowrap; }
+  .row .k { white-space: nowrap; }
+  .k { color: #9fc8ea; }
+  .big { font-size: 56px; line-height: 1; color: #e8f4ff; }
+  .big small { font-size: 26px; color: #9fc8ea; }
+  .state { margin: 12px 0 4px; padding: 8px 10px; font-size: 26px; color: var(--ast-abyss); }
+  .advice { font-size: 20px; line-height: 1.2; color: #cfe6fa; min-height: 48px; }
+  .note { font-size: 18px; line-height: 1.2; color: #7fa6cc; margin-top: 10px; }
+  .scale { height: 12px; margin: 10px 0 4px; box-shadow: 0 0 0 2px var(--ast-abyss); }
+  .scale-l { display: flex; justify-content: space-between; font-size: 18px; color: #9fc8ea; }
+  #chartWrap { position: relative; }
+  #cursor { position: absolute; top: 34px; width: 2px; background: var(--ast-orange); pointer-events: none; }
+  .help p { font-size: 20px; line-height: 1.2; color: #cfe6fa; margin: 0 0 8px; }
+  .help b { font-weight: normal; color: var(--ast-orange); }
+
+  /* ---------- barra de tiempo ---------- */
+  .timebar { position: fixed; left: 18px; right: 424px; bottom: 14px; display: flex; gap: 14px; align-items: center;
+             background: rgba(4,23,52,.88); padding: 10px 14px; box-shadow: 0 0 0 4px var(--ast-navy), 0 0 0 8px var(--ast-abyss); }
+  .clock { font-size: 26px; color: #e8f4ff; min-width: 170px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 28px; background: transparent; border: 0; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 8px; background: var(--ast-navy); box-shadow: 0 0 0 2px var(--ast-abyss); }
+  input[type=range]::-moz-range-track { height: 8px; background: var(--ast-navy); box-shadow: 0 0 0 2px var(--ast-abyss); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 24px; margin-top: -8px; background: var(--ast-orange); border: 0; box-shadow: 0 0 0 2px var(--ast-abyss); }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 24px; background: var(--ast-orange); border: 0; border-radius: 0; box-shadow: 0 0 0 2px var(--ast-abyss); }
+
+  @media (max-width: 900px) {
+    aside { top: auto; height: 46vh; width: auto; left: 10px; }
+    .top, .timebar { right: 18px; }
+    .timebar { bottom: calc(46vh + 24px); }
+  }
+</style>
+<script src="px-button.js" defer></script>
+<script src="gp-chart.js" defer></script>
+<script src="data/gp-data.js" defer></script>
+</head>
+<body>
+  <div id="map">
+    <div id="world"><img id="sat" alt=""><svg id="route"></svg></div>
+  </div>
+  <div id="grid"></div>
+  <div id="pins"></div>
+
+  <div class="top">
+    <button class="px-btn" data-size="sm" id="back">BACK</button>
+    <span class="px-label" data-size="sm" data-color="#f26306">ASTERTRAIL · MAPA TÉRMICO</span>
+    <span class="spacer"></span>
+    <span class="demo" id="demo" hidden>DATOS DE DEMO — corre export_gp.py</span>
+    <button class="px-btn" data-size="sm" id="mode">COLOR: MEDIA</button>
+    <button class="px-btn" data-size="sm" id="edit">EDITAR RUTA</button>
+    <button class="px-btn" data-size="sm" id="undo" hidden>DESHACER</button>
+    <button class="px-btn" data-size="sm" data-variant="danger" id="clear" hidden>BORRAR</button>
+    <button class="px-btn" data-size="sm" id="fit">CENTRAR</button>
+  </div>
+
+  <aside>
+    <section class="px-panel">
+      <div class="px-panel__head">
+        <span class="px-label" data-size="sm" data-color="#e8f4ff">LECTURA EN RUTA</span>
+        <div class="px-panel__meta" id="where"></div>
+      </div>
+      <div class="big" id="tC">--</div>
+      <div class="row"><span class="k">aire</span><b id="tK">-- K</b></div>
+      <div class="row"><span class="k">rango 95 %</span><b id="rng">--</b></div>
+      <div class="row"><span class="k">peor caso (frío)</span><b id="worst">--</b></div>
+      <div class="row"><span class="k">confianza</span><b id="conf">--</b></div>
+      <div class="row" id="distRow" hidden><span class="k">recorrido</span><b id="dist">--</b></div>
+      <div class="state" id="state">--</div>
+      <div class="advice" id="advice"></div>
+      <div class="scale" id="scale"></div>
+      <div class="scale-l" id="scaleL"></div>
+      <div class="note">El estado se decide con el peor caso (límite frío del 95 %), no con la media.</div>
+    </section>
+
+    <section class="px-panel">
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">TEMPERATURA DURANTE LA MISIÓN</span></div>
+      <div id="chartWrap"><div class="px-chart" id="chart"></div><div id="cursor"></div></div>
+    </section>
+
+    <section class="px-panel help">
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">CÓMO LEER EL MAPA</span></div>
+      <p>La línea es tu ruta. Cada tramo tiene el color de la temperatura del aire <b>a la hora en que vas a pasar por ahí</b>.</p>
+      <p>El punto azul marca el momento más frío de la salida; el naranja eres tú en la hora de la barra de abajo.</p>
+      <p>La temperatura viene de REMS (Curiosity) e interpolada por el modelo. Vale para terreno llano cercano; no incluye sombras, pendientes ni la temperatura del suelo.</p>
+    </section>
+  </aside>
+
+  <div class="timebar">
+    <button class="px-btn" data-size="sm" id="play">PLAY</button>
+    <input type="range" id="time" min="0" max="1000" value="0" aria-label="Hora de la misión">
+    <span class="clock" id="clock">--:--</span>
+  </div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN — lo único que deberías tocar
+   ========================================================= */
+const CONFIG = {
+  imagen: 'mapa.jpg',        // tu imagen satelital, dentro de ui/
+  metrosPorPixel: null,      // escala de la imagen en m/px (p. ej. 0.25 para HiRISE). null = no muestra distancias
+  lugar: 'CRÁTER GALE',
+  escala: { min: 180, max: 280 },   // K que cubre la escala de color
+  // Bandas ILUSTRATIVAS por temperatura del aire (K). Cámbialas por los límites reales
+  // del traje / baterías / equipo que quieras modelar.
+  bandas: [
+    { max: 203, nombre: 'FRÍO EXTREMO', color: '#7fb2ff',
+      consejo: 'Calefacción del traje y baterías al máximo consumo. Acortar la salida o esperar a que suba el sol.' },
+    { max: 233, nombre: 'MUY FRÍO', color: '#51b4f5',
+      consejo: 'Consumo alto de calefacción. Vigilar batería, guantes y juntas; evitar paradas largas.' },
+    { max: 258, nombre: 'FRÍO', color: '#bfe6ff',
+      consejo: 'Condición normal de EVA en Marte. Consumo de calefacción moderado.' },
+    { max: Infinity, nombre: 'VENTANA TEMPLADA', color: '#f26306',
+      consejo: 'Mejor ventana térmica del sol: buen momento para tareas largas o lejos de la base.' },
+  ],
+  rutaDemo: [[0.16, 0.74], [0.27, 0.63], [0.38, 0.61], [0.49, 0.50], [0.60, 0.44], [0.70, 0.33], [0.80, 0.27]],
+  segundosAnimacion: 20,     // PLAY recorre toda la misión en este tiempo
+};
+const STORE = 'astertrail.ruta';
+
+/* ---------- utilidades ---------- */
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const toC = (k) => k - 273.15;
+const fmtC = (k) => (toC(k) >= 0 ? '+' : '') + toC(k).toFixed(0) + ' °C';
+const hhmm = (t) => {
+  const h = ((t % 1) + 1) % 1 * 24, H = Math.floor(h + 1e-6), M = Math.round((h - H) * 60);
+  return String((H + (M === 60 ? 1 : 0)) % 24).padStart(2, '0') + ':' + String(M % 60).padStart(2, '0');
+};
+const STOPS = [[0, '#1d2f7a'], [.3, '#2276c0'], [.55, '#51b4f5'], [.72, '#e8f4ff'], [.86, '#f26306'], [1, '#a10a04']];
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function colorK(k) {
+  const f = clamp((k - CONFIG.escala.min) / (CONFIG.escala.max - CONFIG.escala.min), 0, 1);
+  let i = 1; while (i < STOPS.length - 1 && f > STOPS[i][0]) i++;
+  const [f0, c0] = STOPS[i - 1], [f1, c1] = STOPS[i], u = (f - f0) / (f1 - f0 || 1);
+  const a = hex(c0), b = hex(c1);
+  return 'rgb(' + a.map((v, j) => Math.round(v + (b[j] - v) * u)).join(',') + ')';
+}
+const banda = (k) => CONFIG.bandas.find((b) => k < b.max);
+const save = (r) => { try { localStorage.setItem(STORE, JSON.stringify(r)); } catch (e) {} };
+const load = () => { try { const r = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(r)) return r; } catch (e) {} return null; };
+
+/* ---------- datos de demo si no hay export_gp.py ---------- */
+function demoData() {
+  const t0 = 1520 + 5 / 24, t1 = t0 + 9 / 24, n = 200, t = [], mu = [], sigma = [];
+  for (let i = 0; i < n; i++) {
+    const ti = t0 + (t1 - t0) * i / (n - 1), h = (ti % 1) * 24;
+    t.push(ti); mu.push(222 + 34 * Math.sin(2 * Math.PI * (h - 8.5) / 24) + 4 * Math.sin(h));
+    sigma.push(2 + 2.5 * Math.abs(Math.sin(i / 25)));
+  }
+  return { meta: { n_fit: 0, demo: true }, mission: { t0, t1, sol: 1520, ltst_start: 5, hours: 9 },
+           obs: { t: [], x: [] }, hidden: { t: [], x: [] },
+           pred: { t, mu, sigma, lo95: mu.map((m, i) => m - 1.96 * sigma[i]), hi95: mu.map((m, i) => m + 1.96 * sigma[i]) } };
+}
+
+/* ---------- estado ---------- */
+let D, W = 1600, H = 1000, tx = 0, ty = 0, s = 1, f = 0;
+let route = load() || CONFIG.rutaDemo.map((p) => p.slice());
+let editing = false, worstMode = false, playing = false;
+const map = $('map'), world = $('world'), svg = $('route'), pins = $('pins');
+
+/* ---------- geometría de la ruta ---------- */
+function geom() {
+  const p = route.map(([x, y]) => [x * W, y * H]), cum = [0];
+  for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
+  return { p, cum, L: cum[cum.length - 1] };
+}
+function posAt(g, u) {                    // u en [0,1] a lo largo de la ruta (por distancia)
+  if (g.p.length === 1 || g.L === 0) return g.p[0];
+  const d = u * g.L; let i = 1;
+  while (i < g.cum.length - 1 && g.cum[i] < d) i++;
+  const v = (d - g.cum[i - 1]) / (g.cum[i] - g.cum[i - 1] || 1);
+  return [g.p[i - 1][0] + (g.p[i][0] - g.p[i - 1][0]) * v, g.p[i - 1][1] + (g.p[i][1] - g.p[i - 1][1]) * v];
+}
+const fracOf = (t) => (t - D.mission.t0) / (D.mission.t1 - D.mission.t0);
+const metric = (i) => worstMode ? D.pred.mu[i] - 1.96 * D.pred.sigma[i] : D.pred.mu[i];
+function sample(u) {                      // GP interpolado linealmente en la fracción u de la misión
+  const P = D.pred, t = D.mission.t0 + u * (D.mission.t1 - D.mission.t0);
+  let i = 1; while (i < P.t.length - 1 && P.t[i] < t) i++;
+  const v = clamp((t - P.t[i - 1]) / (P.t[i] - P.t[i - 1] || 1), 0, 1);
+  const L = (a) => a[i - 1] + (a[i] - a[i - 1]) * v;
+  return { t, mu: L(P.mu), sd: L(P.sigma) };
+}
+
+/* ---------- dibujo ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, at) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); return e; };
+function drawRoute() {
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.innerHTML = '';
+  if (route.length < 2) return;
+  const g = geom();
+  svg.appendChild(el('polyline', { points: g.p.map((q) => q.join(',')).join(' '), fill: 'none', stroke: '#041734',
+    'stroke-width': 11, 'stroke-linejoin': 'round', 'stroke-linecap': 'square', 'vector-effect': 'non-scaling-stroke' }));
+  const P = D.pred;
+  for (let i = 0; i < P.t.length - 1; i++) {
+    const a = posAt(g, clamp(fracOf(P.t[i]), 0, 1)), b = posAt(g, clamp(fracOf(P.t[i + 1]), 0, 1));
+    svg.appendChild(el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: colorK(metric(i)),
+      'stroke-width': 6, 'stroke-linecap': 'round', 'vector-effect': 'non-scaling-stroke' }));
+  }
+}
+function pin(x, y, cls, html = '') {
+  const d = document.createElement('div'); d.className = 'pin ' + cls; d.innerHTML = html;
+  d.style.left = (tx + x * s) + 'px'; d.style.top = (ty + y * s) + 'px'; pins.appendChild(d); return d;
+}
+function drawPins() {
+  pins.innerHTML = '';
+  if (!route.length) return;
+  const g = geom();
+  g.p.forEach(([x, y], i) => pin(x, y, 'wp', editing ? `<span>${i + 1}</span>` : ''));
+  if (route.length < 2) return;
+  pin(g.p[0][0], g.p[0][1], 'tag', 'INICIO ' + hhmm(D.mission.t0));
+  const e = g.p[g.p.length - 1]; pin(e[0], e[1], 'tag', 'FIN ' + hhmm(D.mission.t1));
+  // momento más frío de la salida (según el modo de color)
+  let im = 0; for (let i = 1; i < D.pred.t.length; i++) if (metric(i) < metric(im)) im = i;
+  const c = posAt(g, clamp(fracOf(D.pred.t[im]), 0, 1));
+  pin(c[0], c[1], 'cold-dot'); pin(c[0], c[1], 'tag cold', `MÍN ${hhmm(D.pred.t[im])} · ${fmtC(metric(im))}`);
+  const a = posAt(g, f); pin(a[0], a[1], 'astro');
+}
+function apply() { world.style.transform = `translate(${tx}px,${ty}px) scale(${s})`; drawPins(); }
+function fit() {
+  const narrow = innerWidth <= 900;
+  const vw = narrow ? innerWidth : innerWidth - 420, vh = narrow ? innerHeight * 0.54 : innerHeight;
+  s = Math.min(vw / W, vh / H) * 0.94; tx = (vw - W * s) / 2; ty = (vh - H * s) / 2; apply();
+}
+
+/* ---------- panel ---------- */
+function update() {
+  const r = sample(f), lo = r.mu - 1.96 * r.sd, hi = r.mu + 1.96 * r.sd, b = banda(lo);
+  const sol = Math.floor(r.t + 1e-9);
+  $('clock').textContent = `SOL ${sol} · ${hhmm(r.t)}`;
+  $('where').textContent = `${CONFIG.lugar} · ${hhmm(r.t)} LTST`;
+  $('tC').innerHTML = `${fmtC(r.mu)}`;
+  $('tK').textContent = `${r.mu.toFixed(1)} K`;
+  $('rng').textContent = `${fmtC(lo)} a ${fmtC(hi)}`;
+  $('worst').textContent = `${fmtC(lo)}  (${lo.toFixed(0)} K)`;
+  $('conf').textContent = r.sd < 2 ? `ALTA  ±${r.sd.toFixed(1)} K` : r.sd < 5 ? `MEDIA  ±${r.sd.toFixed(1)} K` : `BAJA  ±${r.sd.toFixed(1)} K — pocos datos`;
+  $('state').textContent = b.nombre; $('state').style.background = b.color;
+  $('advice').textContent = b.consejo;
+  if (CONFIG.metrosPorPixel && route.length > 1) {
+    const L = geom().L * CONFIG.metrosPorPixel;
+    $('distRow').hidden = false; $('dist').textContent = `${(f * L / 1000).toFixed(2)} de ${(L / 1000).toFixed(2)} km`;
+  }
+  const cb = $('chart').querySelector('canvas');
+  if (cb) { const w = cb.clientWidth; Object.assign($('cursor').style, { left: (70 + f * (w - 96)) + 'px', height: (cb.clientHeight - 96) + 'px' }); }
+  drawPins();
+}
+function drawChart() { GPChart.draw($('chart'), D, { height: 230 }); update(); }
+function legend() {
+  const { min, max } = CONFIG.escala, n = 24, parts = [];
+  for (let i = 0; i <= n; i++) parts.push(`${colorK(min + (max - min) * i / n)} ${(i / n * 100).toFixed(1)}%`);
+  $('scale').style.background = `linear-gradient(90deg, ${parts.join(',')})`;
+  $('scaleL').innerHTML = [min, (min + max) / 2, max].map((k) => `<span>${fmtC(k)}</span>`).join('');
+}
+
+/* ---------- interacción ---------- */
+let drag = null;
+map.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, tx, ty, moved: false }; map.setPointerCapture(e.pointerId); });
+map.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; map.classList.add('dragging'); }
+  if (drag.moved) { tx = drag.tx + dx; ty = drag.ty + dy; apply(); }
+});
+map.addEventListener('pointerup', (e) => {
+  if (drag && !drag.moved && editing) {
+    const x = clamp((e.clientX - tx) / s / W, 0, 1), y = clamp((e.clientY - ty) / s / H, 0, 1);
+    route.push([+x.toFixed(4), +y.toFixed(4)]); save(route); drawRoute(); update();
+  }
+  drag = null; map.classList.remove('dragging');
+});
+map.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const ns = clamp(s * Math.exp(-e.deltaY * 0.0015), 0.05, 20), wx = (e.clientX - tx) / s, wy = (e.clientY - ty) / s;
+  s = ns; tx = e.clientX - wx * s; ty = e.clientY - wy * s; apply();
+}, { passive: false });
+
+function relabel(btn, txt) { btn.dataset.label = txt; btn.textContent = txt; PxButton.render(btn); }
+$('edit').onclick = () => {
+  editing = !editing; map.classList.toggle('edit', editing);
+  relabel($('edit'), editing ? 'LISTO' : 'EDITAR RUTA');
+  $('undo').hidden = $('clear').hidden = !editing;
+  if (editing) { PxButton.render($('undo')); PxButton.render($('clear')); }
+  drawPins();
+};
+$('undo').onclick = () => { route.pop(); save(route); drawRoute(); update(); };
+$('clear').onclick = () => { route = []; save(route); drawRoute(); update(); };
+$('mode').onclick = () => { worstMode = !worstMode; relabel($('mode'), worstMode ? 'COLOR: PEOR CASO' : 'COLOR: MEDIA'); drawRoute(); update(); };
+$('fit').onclick = fit;
+$('back').onclick = () => history.back();
+$('time').oninput = (e) => { f = e.target.value / 1000; update(); };
+$('play').onclick = () => {
+  playing = !playing; relabel($('play'), playing ? 'PAUSA' : 'PLAY');
+  if (!playing) return;
+  if (f >= 1) f = 0;
+  let last = performance.now();
+  const step = (now) => {
+    if (!playing) return;
+    f = Math.min(1, f + (now - last) / 1000 / CONFIG.segundosAnimacion); last = now;
+    $('time').value = Math.round(f * 1000); update();
+    if (f < 1) requestAnimationFrame(step); else { playing = false; relabel($('play'), 'PLAY'); }
+  };
+  requestAnimationFrame(step);
+};
+
+/* ---------- arranque ---------- */
+window.addEventListener('DOMContentLoaded', async () => {
+  D = window.GP_DATA;
+  if (!D) { try { D = await (await fetch('data/gp.json')).json(); } catch (e) {} }
+  if (!D || !D.pred || !D.pred.t || !D.pred.t.length) { D = demoData(); $('demo').hidden = false; }
+  legend();
+
+  const img = $('sat');
+  const start = () => { drawRoute(); fit(); drawChart(); };
+  img.onload = () => { W = img.naturalWidth; H = img.naturalHeight; start(); };
+  img.onerror = () => {      // sin imagen: lienzo de relleno con instrucciones
+    img.remove(); W = 1600; H = 1000;
+    world.style.width = W + 'px'; world.style.height = H + 'px';
+    world.style.background = 'repeating-linear-gradient(45deg,#0a1a33 0 24px,#0c203f 24px 48px)';
+    const t = document.createElement('div');
+    Object.assign(t.style, { position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', font: '44px var(--px-font)', color: '#51b4f5' });
+    t.textContent = 'COLOCA TU IMAGEN SATELITAL EN ui/' + CONFIG.imagen;
+    world.insertBefore(t, svg); start();
+  };
+  img.src = CONFIG.imagen;
+
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { fit(); drawChart(); }, 120); });
+});
+</script>
+</body>
+</html>
