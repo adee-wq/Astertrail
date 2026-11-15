@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Astertrail · Mapa de la misión</title>
+<title>Marswalk · Astertrail</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="px-button.css">
 <link rel="stylesheet" href="px-panel.css">
+<link rel="stylesheet" href="modules/trace/trace.css">
 <style>
   [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
@@ -41,7 +42,8 @@
   .top > * { pointer-events: auto; }
   .top .spacer { flex: 1; }
   .demo { font-size: 20px; color: var(--ast-orange); text-shadow: 2px 2px 0 var(--ast-abyss); }
-  .tabs { display: flex; gap: 6px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .top { z-index: 900 !important; }
   .op { display: flex; align-items: center; gap: 8px; font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 2px 10px; box-shadow: 0 0 0 2px var(--ast-navy); }
   .op input[type=range] { width: 110px; flex: none; }
   .credits { font-size: 16px; line-height: 1.2; color: #7fa6cc; }
@@ -79,6 +81,17 @@
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 24px; margin-top: -8px; background: var(--ast-orange); border: 0; box-shadow: 0 0 0 2px var(--ast-abyss); }
   input[type=range]::-moz-range-thumb { width: 16px; height: 24px; background: var(--ast-orange); border: 0; border-radius: 0; box-shadow: 0 0 0 2px var(--ast-abyss); }
 
+  /* módulo DATOS: panel grande sobre el área del mapa */
+  #mod-datos .dmain { position: fixed; left: 18px; right: var(--side); top: var(--toph, 84px); bottom: 14px; margin: 0; overflow: auto; z-index: 800; }
+  #mod-datos .txt { font-size: 20px; line-height: 1.2; color: #cfe6fa; margin: 0 0 8px; }
+  #mod-datos .txt b { font-weight: normal; color: #f26306; }
+  #mod-datos table.segs { width: 100%; border-collapse: collapse; font-size: 18px; color: #cfe6fa; }
+  #mod-datos table.segs th { font-weight: normal; color: #9fc8ea; text-align: right; padding: 2px 3px; }
+  #mod-datos table.segs td { text-align: right; padding: 2px 3px; }
+  #mod-datos table.segs td:first-child, #mod-datos table.segs th:first-child { text-align: left; }
+  #mod-datos .msg { font-size: 19px; line-height: 1.2; padding: 6px 8px; background: rgba(79,210,122,.14); box-shadow: inset 3px 0 0 #4fd27a; color: #d4ffe2; }
+  #mod-datos .msg b { font-weight: normal; color: #4fd27a; }
+  #mod-datos aside .px-panel { margin: 8px 8px 16px; }
   @media (max-width: 900px) {
     body { --side: 18px; --charts-h: 20vh; }
     aside { top: auto; height: 34vh; width: auto; left: 10px; }
@@ -95,6 +108,15 @@
 <script src="dem.js"></script>
 <script src="data/dem.js"></script>
 <script src="sim.js"></script>
+<!-- módulos de Marswalk (el "backend": lógica pura + clases que se montan sobre este mapa) -->
+<script src="gp-chart.js" defer></script>
+<script src="modules/trace/i18n/es.js"></script>
+<script src="modules/trace/terrain.js"></script>
+<script src="modules/trace/rss.js"></script>
+<script src="modules/trace/missions.js"></script>
+<script src="modules/trace/gamification.js"></script>
+<script src="modules/trace/trace-module.js"></script>
+<script src="modules/datos/datos-module.js"></script>
 </head>
 <body>
   <div id="map"></div>
@@ -103,21 +125,24 @@
   <div class="top">
     <button class="px-btn" data-size="sm" id="back">BACK</button>
     <div class="tabs">
-      <button class="px-btn" data-size="sm" data-variant="danger" id="tabTerm">MAPA · TÉRMICO</button>
-      <button class="px-btn" data-size="sm" id="tabGeo">MAPA · GEOTOPOLÓGICO</button>
+      <button class="px-btn" data-size="sm" data-variant="danger" id="tabTerm">TÉRMICO</button>
+      <button class="px-btn" data-size="sm" id="tabGeo">GEOTOPOLÓGICO</button>
+      <button class="px-btn" data-size="sm" id="tabTrace">TRACE YOUR ROUTE!</button>
+      <button class="px-btn" data-size="sm" id="tabDatos">DATOS</button>
     </div>
     <span class="spacer"></span>
     <span class="demo" id="demo" hidden>DATOS DE DEMO — corre export_gp.py</span>
     <button class="px-btn" data-size="sm" id="base">BASE: IMAGEN</button>
     <label class="op" id="opBox" hidden>RELIEVE <input type="range" id="op" min="0" max="100" value="60" aria-label="Opacidad del relieve"></label>
+    <span data-modes="term geo" style="display:contents">
     <button class="px-btn" data-size="sm" id="edit">EDITAR RUTA</button>
     <button class="px-btn" data-size="sm" id="undo" hidden>DESHACER</button>
     <button class="px-btn" data-size="sm" data-variant="danger" id="clear" hidden>BORRAR</button>
     <button class="px-btn" data-size="sm" id="fit">CENTRAR</button>
-    <button class="px-btn" data-size="sm" data-variant="danger" id="trace" title="Módulo Trace Your Route! (simulación gamificada; no modifica este mapa)">TRACE YOUR ROUTE!</button>
+    </span>
   </div>
 
-  <aside>
+  <aside id="mainAside" data-modes="term geo">
     <!-- ===== TÉRMICO ===== -->
     <section class="px-panel" data-view="term">
       <div class="px-panel__head">
@@ -192,7 +217,7 @@
     </section>
   </aside>
 
-  <div class="charts">
+  <div class="charts" data-modes="term geo">
     <section class="px-panel cbox" data-view="term">
       <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PRONÓSTICO 3 SOLS · CLIC PARA ELEGIR SALIDA</span></div>
       <canvas id="cTemp"></canvas>
@@ -203,7 +228,7 @@
     </section>
   </div>
 
-  <div class="timebar">
+  <div class="timebar" data-modes="term geo">
     <button class="px-btn" data-size="sm" id="play">PLAY</button>
     <input type="range" id="time" min="0" max="1000" value="0" aria-label="Momento de la travesía">
     <span class="clock" id="clock">--:--</span>
@@ -436,7 +461,7 @@ function routeChanged() { save(route); rescan(); redraw(); }
 function setDep(t) { const [a, b] = forecast(); tDep = clamp(+t.toFixed(6), a, b); f = 0; $('time').value = 0; redraw(); }
 
 /* ---------- interacción ---------- */
-map.on('click', (e) => { if (!editing) return; route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); routeChanged(); });
+map.on('click', (e) => { if (!editing || (view !== 'term' && view !== 'geo')) return; route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); routeChanged(); });
 map.on('mousemove', (e) => { $('gCur').textContent = fmtLL(e.latlng.lat, e.latlng.lng); $('gCurE').textContent = fmtE(e.latlng.lat, e.latlng.lng); });
 $('cTemp').addEventListener('click', (e) => { const t = chT && chT.xAt(e.clientX); if (t != null) setDep(Math.round(t * 1440 / CONFIG.pasoSalida) * CONFIG.pasoSalida / 1440); });
 $('cTemp').addEventListener('mousemove', (e) => { const t = chT && chT.xAt(e.clientX); if (t == null || !R) return;
@@ -457,7 +482,7 @@ $('undo').onclick = () => { route.pop(); routeChanged(); };
 $('clear').onclick = () => { route = []; routeChanged(); };
 $('fit').onclick = fit;
 // módulo Trace: solo le pasamos la hora actual de salida (lectura); el mapa no depende de él
-$('trace').onclick = () => { location.href = `modules/trace/trace.html?t0=${tDep.toFixed(6)}${A.OFFLINE ? '&offline=1' : ''}`; };
+
 $('back').onclick = () => location.href = 'index.html' + (/[?&]offline=1\b/.test(location.search) ? '?offline=1' : '') + '#menu';   // [Marswalk] al menú, sin repetir el viaje
 $('depM').onclick = () => setDep(tDep - CONFIG.pasoSalida / 1440);
 $('depP').onclick = () => setDep(tDep + CONFIG.pasoSalida / 1440);
@@ -485,17 +510,39 @@ function setBase(k) {
   $('opBox').hidden = !(view === 'geo' && k === 'imagen');
   relabel($('base'), k === 'imagen' ? 'BASE: IMAGEN' : 'BASE: RELIEVE');
 }
+/* ---------- registro de módulos (Marswalk = un solo mapa; cada módulo se monta/desmonta sobre él) ---------- */
+const MODULES = {};
+let active = null;
+function ownLayers(on) {               // capas del mapa térmico/geo: se retiran mientras otro módulo usa el mapa
+  [routeLayer, pinLayer].forEach((l) => on ? l.addTo(map) : map.removeLayer(l));
+  if (!on) astro.remove();
+}
+const HASH = { term: '#termico', geo: '#geo', trace: '#trace', datos: '#datos' };
+function topH() { const t = document.querySelector('.top'); document.body.style.setProperty('--toph', (t.offsetTop + t.offsetHeight + 10) + 'px'); }
+addEventListener('resize', topH);
 function setView(v) {
-  view = v;
+  if (active && active !== v && MODULES[active]) { try { MODULES[active].deactivate(); } catch (e) { (window.MW_REPORT || console.error)('salir de ' + active, e); } }
+  const prev = view; view = v; active = MODULES[v] ? v : null;
   const tab = (b, on) => { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); };
-  tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo');
-  document.querySelectorAll('[data-view]').forEach((e) => { e.hidden = e.dataset.view !== v; });
-  document.querySelectorAll('aside .px-btn').forEach((b) => PxButton.render(b));
-  try { history.replaceState(null, '', location.search + (v === 'geo' ? '#geo' : '#termico')); } catch (e) {}
-  setBase(baseKey); drawRoute(); drawPins(); update();
+  tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo'); tab($('tabTrace'), v === 'trace'); tab($('tabDatos'), v === 'datos');
+  document.querySelectorAll('[data-modes]').forEach((e) => { e.hidden = !e.dataset.modes.split(' ').includes(v); });
+  try { history.replaceState(null, '', location.search + HASH[v]); } catch (e) {}
+  topH();
+  if (v === 'term' || v === 'geo') {
+    document.querySelectorAll('[data-view]').forEach((e) => { e.hidden = e.dataset.view !== v; });
+    document.querySelectorAll('#mainAside .px-btn').forEach((b) => PxButton.render(b));
+    ownLayers(true); setBase(baseKey); drawRoute(); drawPins(); update();
+    if (prev === 'trace' || prev === 'datos') fit();
+  } else {
+    ownLayers(false); playing = false; if (editing) $('edit').onclick();
+    map.removeLayer(reliefOver); $('opBox').hidden = true;
+    try { MODULES[v].activate(); } catch (e) { (window.MW_REPORT || console.error)('módulo ' + v, e); }
+  }
 }
 $('tabTerm').onclick = () => setView('term');
 $('tabGeo').onclick = () => setView('geo');
+$('tabTrace').onclick = () => setView('trace');
+$('tabDatos').onclick = () => setView('datos');
 $('base').onclick = () => setBase(baseKey === 'imagen' ? 'relieve' : 'imagen');
 $('op').oninput = (e) => reliefOver.setOpacity(e.target.value / 100);
 
@@ -508,7 +555,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   tDep = forecast()[0] + CONFIG.salidaInicial / 24;
   const step = (n, fn) => { try { fn(); } catch (e) { (window.MW_REPORT || console.error)(n, e); } };   // un paso que falle no detiene los demás
   step('escaneo', rescan); step('simulación', resim); step('encuadre', fit);
-  step('vista', () => setView(location.hash === '#geo' ? 'geo' : 'term')); step('plan', plan);
+  step('módulos', () => {
+    MODULES.trace = new TraceModule({ map, L, layers: A, dem, gp: D, t0: () => tDep, onExit: () => setView('term') });
+    MODULES.datos = new DatosModule({ gp: D });
+  });
+  const start = { '#geo': 'geo', '#trace': 'trace', '#datos': 'datos' }[location.hash] || 'term';
+  step('vista', () => setView(start)); step('plan', plan);
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { map.invalidateSize(); update(); }, 120); });
 });
 </script>

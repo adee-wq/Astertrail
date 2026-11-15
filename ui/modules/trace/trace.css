@@ -1,0 +1,46 @@
+/* Marswalk · módulo Trace · estilos (todo bajo #mod-trace, o clases tr* para los iconos del mapa) */
+.trwp { width: 14px; height: 14px; background: var(--ast-abyss); box-shadow: 0 0 0 2px #e8f4ff; cursor: grab; }
+.trwp span { position: absolute; left: 18px; top: -6px; font-size: 18px; color: #e8f4ff; text-shadow: 2px 2px 0 var(--ast-abyss); }
+.tag.trgoal { color: #4fd27a; box-shadow: 0 0 0 2px #4fd27a; }
+.tag.trseg { transform: translate(-50%, -50%); font-size: 18px; padding: 0 6px; }
+.trbase { width: 18px; height: 18px; background: #e8f4ff; box-shadow: 0 0 0 3px var(--ast-abyss), 0 0 0 5px var(--ast-orange); }
+.trrover { width: 16px; height: 16px; background: var(--ast-orange); box-shadow: 0 0 0 3px var(--ast-abyss), 0 0 0 5px #e8f4ff; }
+.trrover::after { content: ''; position: absolute; inset: -14px; box-shadow: 0 0 0 2px var(--ast-orange); animation: ping 1.6s steps(6) infinite; }
+#map.tredit, #map.tredit .leaflet-interactive { cursor: crosshair; }
+
+#mod-trace .tbar { position: fixed; top: var(--toph, 84px); left: 18px; right: var(--side); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 800; pointer-events: none; }
+#mod-trace .tbar > * { pointer-events: auto; }
+#mod-trace .brand { display: flex; flex-direction: column; margin-right: 6px; }
+#mod-trace .brand b { font-weight: normal; font-size: 30px; color: var(--ast-orange); line-height: 1; text-shadow: 3px 3px 0 var(--ast-abyss); }
+#mod-trace .brand i { font-style: normal; font-size: 17px; color: #e8f4ff; text-shadow: 2px 2px 0 var(--ast-abyss); }
+#mod-trace .hint { font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 4px 10px; box-shadow: 0 0 0 2px var(--ast-navy); }
+#mod-trace aside .px-panel { margin: 8px 8px 16px; }
+#mod-trace .txt { font-size: 20px; line-height: 1.2; color: #cfe6fa; margin: 0 0 8px; }
+#mod-trace .obj { font-size: 20px; line-height: 1.35; color: #cfe6fa; }
+#mod-trace .obj .ok { color: #4fd27a; } #mod-trace .obj .no { color: #ff7a5c; }
+#mod-trace .rss { display: flex; align-items: baseline; gap: 12px; }
+#mod-trace .rss .n { font-size: 72px; line-height: 1; color: #e8f4ff; }
+#mod-trace .rss .c { font-size: 28px; padding: 2px 10px; color: var(--ast-abyss); }
+#mod-trace .msg { font-size: 20px; line-height: 1.2; margin: 6px 0; padding: 6px 8px; background: rgba(255,59,31,.15); box-shadow: inset 3px 0 0 #ff3b1f; color: #ffd2c2; }
+#mod-trace .msg.warn { background: rgba(242,99,6,.14); box-shadow: inset 3px 0 0 #f26306; color: #ffe0c8; }
+#mod-trace .msg.ok { background: rgba(79,210,122,.14); box-shadow: inset 3px 0 0 #4fd27a; color: #d4ffe2; }
+#mod-trace table.segs { width: 100%; border-collapse: collapse; font-size: 19px; color: #cfe6fa; margin-top: 8px; }
+#mod-trace table.segs th { font-weight: normal; color: #9fc8ea; text-align: right; padding: 2px 4px; }
+#mod-trace table.segs td { text-align: right; padding: 2px 4px; }
+#mod-trace table.segs tr.crit td { color: #ffb3a0; }
+#mod-trace table.segs td:first-child, #mod-trace table.segs th:first-child { text-align: left; }
+#mod-trace .sw { display: inline-block; width: 10px; height: 10px; margin-right: 4px; }
+#mod-trace .btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+#mod-trace .hud { display: flex; gap: 16px; font-size: 22px; color: #e8f4ff; flex: 1; flex-wrap: wrap; }
+#mod-trace .hud span em { font-style: normal; color: #9fc8ea; }
+#mod-trace .bar { flex: 0 0 160px; height: 10px; background: var(--ast-navy); box-shadow: 0 0 0 2px var(--ast-abyss); }
+#mod-trace .bar i { display: block; height: 100%; background: var(--ast-orange); width: 0; }
+#mod-trace .medals { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+#mod-trace .medal { font-size: 18px; padding: 2px 8px; color: #5f7fa6; box-shadow: 0 0 0 2px #17365e; background: rgba(4,23,52,.6); }
+#mod-trace .medal.on { color: var(--ast-abyss); background: #f2c206; box-shadow: 0 0 0 2px #fff3b0; }
+#mod-trace .medal.new { animation: trblink .5s steps(2) 6; }
+@keyframes trblink { 50% { background: #f26306; } }
+#mod-trace .modal { position: fixed; inset: 0; z-index: 2000; background: rgba(2,12,29,.78); display: grid; place-items: center; }
+#mod-trace .modal .px-panel { width: min(760px, 94vw); max-height: 90vh; overflow-y: auto; }
+#mod-trace .modal h2 { font-weight: normal; font-size: 44px; margin: 0 0 6px; }
+#mod-trace .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
