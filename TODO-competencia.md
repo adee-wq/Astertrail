@@ -51,6 +51,26 @@
 - El tiempo de misión sale de la física: v = min(v_crucero, η·P/F), F = m·g·(Crr·cosθ + sinθ); θ > θ_max → intransitable. **T_real = Ct × Σ Δt, Ct = 1.3**.
 - Vehículo: LRV 2 personas (REFERENCIA, VERIFICAR). "Momento correcto" = hora de salida que mejor cumple temperatura + batería.
 
+## BLOQUE E · TRACE YOUR ROUTE! (extensión gamificada, spec v2.0 de Alan)
+> Página independiente `ui/trace.html`, a la que se entra con un botón **TRACE YOUR ROUTE!** desde `mapa.html`. Solo **lee** datos del mapa (Mars Trek, DEM, GP) y no modifica nada. Sus rutas viven en su propia clave de `localStorage`.
+> Reutiliza lo hecho: `layers.js` + `dem.js` + `data/*.js` = Map Data Adapter · `sim.js` = Rover Simulator.
+
+| módulo spec | archivo | estado |
+|---|---|---|
+| A Mission Manager | `ui/missions.js` (misiones, objetivo, radio, ida y vuelta, condiciones de fin) | por hacer |
+| B Map Data Adapter | `layers.js`, `dem.js`, `data/dem.js`, `data/gp-data.js` (solo lectura) | **existe** |
+| C Route Planner | en `trace.html`: añadir, mover (arrastre), insertar, borrar waypoint; distancias | parcial (mapa.html) |
+| D Terrain Analyzer | `ui/terrain.js`: elevación, pendiente, **rugosidad** (RMS del DEM sin tendencia), accesibilidad | por hacer |
+| E Route Evaluator | `ui/rss.js` puro + `rss.test.js`: S, G, T, A por segmento, Rᵢ = .35S+.30G+.20T+.15A, RSS ponderado por distancia, penalizaciones | por hacer |
+| F Rover Simulator | `sim.js` (+ regla de misión: detenerse en intransitable) | **existe** |
+| G Results Manager | informe: RSS + clase, estado, distancia, energía, segmentos de riesgo, objetivos, recomendaciones | por hacer |
+| H Gamification Manager | puntuación, mejor marca por misión, reintentar | por hacer |
+
+- [ ] E1 · `rss.js` + `terrain.js` + pruebas (normalizaciones, penalizaciones) — 25 min
+- [ ] E2 · `missions.js` + `trace.html` (planificar, advertencias previas, ejecutar, informe) — 40 min
+- [ ] E3 · botón de acceso en `mapa.html` + gamificación (mejor marca, reintento) — 15 min
+- Nota: la spec recibida se corta en "Módulo G … Identificar segmentos problem" (faltan el resto de G y H).
+
 ## Lista de recortes (en orden)
 1. C3 · 2. `cache_tiles.py` · 3. x300 y alertas de curva · 4. DEM → HRSC 30 m / MOLA · 5. `regen = 0`
 Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
