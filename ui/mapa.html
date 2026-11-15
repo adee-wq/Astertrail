@@ -10,7 +10,8 @@
 <style>
   [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
-  body { background: var(--ast-abyss); color: var(--ast-sky); font-family: var(--px-font); }
+  body { background: var(--ast-abyss); color: var(--ast-sky); font-family: var(--px-font);
+         --side: 424px; --charts-h: clamp(170px, 27vh, 250px); }
 
   /* ---------- mapa ---------- */
   #map { position: fixed; inset: 0; background: #020c1d; }
@@ -18,59 +19,60 @@
   .leaflet-container { font-family: var(--px-font); }
   .leaflet-tile-pane { filter: saturate(.85) contrast(1.05); }
   .leaflet-div-icon.pw { background: none; border: 0; }
-  .leaflet-control-scale { margin-left: 18px !important; margin-bottom: 104px !important; }
+  .leaflet-control-scale { margin-left: 18px !important; margin-bottom: calc(var(--charts-h) + 104px) !important; }
   .leaflet-control-scale-line { font-size: 16px; background: rgba(4,23,52,.8); color: #e8f4ff; border-color: #e8f4ff; }
-  /* rejilla de coordenadas + viñeta: aspecto de pantalla de navegación */
-  #grid { position: fixed; inset: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse at 45% 50%, transparent 60%, rgba(2,12,29,.6) 100%); z-index: 400; }
+  #grid { position: fixed; inset: 0; pointer-events: none; z-index: 400;
+    background: radial-gradient(ellipse at 45% 40%, transparent 60%, rgba(2,12,29,.6) 100%); }
   .pin { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
   .wp { width: 10px; height: 10px; background: var(--ast-abyss); box-shadow: 0 0 0 2px #e8f4ff; }
   .wp span { position: absolute; left: 14px; top: -8px; font-size: 18px; color: #e8f4ff; text-shadow: 2px 2px 0 var(--ast-abyss); }
   .tag { font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 2px 8px;
          box-shadow: 0 0 0 2px var(--ast-navy); transform: translate(-50%, calc(-100% - 14px)); }
-  .tag.cold { color: #bfe6ff; box-shadow: 0 0 0 2px #7fb2ff; transform: translate(-50%, 16px); }   /* debajo, para no tapar INICIO/FIN */
+  .tag.cold { color: #bfe6ff; box-shadow: 0 0 0 2px #7fb2ff; transform: translate(-50%, 16px); }
+  .tag.bad { color: #ffd2c2; box-shadow: 0 0 0 2px #ff3b1f; transform: translate(-50%, 16px); }
   .cold-dot { width: 12px; height: 12px; background: #7fb2ff; box-shadow: 0 0 0 2px var(--ast-abyss), 0 0 0 4px #7fb2ff; }
-  /* astronauta: cuadro naranja con anillo que late */
   .astro { width: 14px; height: 14px; background: var(--ast-orange); box-shadow: 0 0 0 3px var(--ast-abyss), 0 0 0 5px #e8f4ff; }
   .astro::after { content: ''; position: absolute; inset: -14px; box-shadow: 0 0 0 2px var(--ast-orange);
                   animation: ping 1.6s steps(6) infinite; }
   @keyframes ping { from { opacity: .9; inset: -6px; } to { opacity: 0; inset: -22px; } }
 
   /* ---------- HUD ---------- */
-  .top { position: fixed; top: 14px; left: 18px; right: 424px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+  .top { position: fixed; top: 14px; left: 18px; right: var(--side); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; pointer-events: none; z-index: 800; }
   .top > * { pointer-events: auto; }
   .top .spacer { flex: 1; }
-  .hint { font-size: 20px; color: #9fc8ea; text-shadow: 2px 2px 0 var(--ast-abyss); }
   .demo { font-size: 20px; color: var(--ast-orange); text-shadow: 2px 2px 0 var(--ast-abyss); }
   .tabs { display: flex; gap: 6px; }
   .op { display: flex; align-items: center; gap: 8px; font-size: 20px; color: #e8f4ff; background: rgba(4,23,52,.85); padding: 2px 10px; box-shadow: 0 0 0 2px var(--ast-navy); }
   .op input[type=range] { width: 110px; flex: none; }
-  .soon { font-size: 20px; line-height: 1.2; color: var(--ast-orange); }
   .credits { font-size: 16px; line-height: 1.2; color: #7fa6cc; }
 
-  aside { position: fixed; top: 10px; right: 10px; bottom: 10px; width: 392px; overflow-y: auto; overflow-x: hidden; }
+  aside { position: fixed; top: 10px; right: 10px; bottom: 10px; width: 392px; overflow-y: auto; overflow-x: hidden; z-index: 800; }
   aside .px-panel { margin: 8px 8px 16px; }
   .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 22px; line-height: 1.25; }
   .row b { font-weight: normal; color: #e8f4ff; white-space: nowrap; }
   .row .k { white-space: nowrap; }
   .k { color: #9fc8ea; }
   .big { font-size: 56px; line-height: 1; color: #e8f4ff; }
-  .big small { font-size: 26px; color: #9fc8ea; }
-  .state { margin: 12px 0 4px; padding: 8px 10px; font-size: 26px; color: var(--ast-abyss); }
+  .rec { font-size: 26px; line-height: 1.15; color: #e8f4ff; margin-bottom: 8px; }
+  .rec b { font-weight: normal; color: var(--ast-orange); }
+  .state { margin: 10px 0 4px; padding: 8px 10px; font-size: 26px; color: var(--ast-abyss); }
+  .why { font-size: 20px; line-height: 1.2; color: #ffd2c2; min-height: 0; }
   .advice { font-size: 20px; line-height: 1.2; color: #cfe6fa; min-height: 48px; }
   .note { font-size: 18px; line-height: 1.2; color: #7fa6cc; margin-top: 10px; }
-  .scale { height: 12px; margin: 10px 0 4px; box-shadow: 0 0 0 2px var(--ast-abyss); }
-  .scale-l { display: flex; justify-content: space-between; font-size: 18px; color: #9fc8ea; }
-  #chartWrap { position: relative; }
-  #cursor { position: absolute; top: 34px; width: 2px; background: var(--ast-orange); pointer-events: none; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
   .help p { font-size: 20px; line-height: 1.2; color: #cfe6fa; margin: 0 0 8px; }
   .help b { font-weight: normal; color: var(--ast-orange); }
 
+  /* ---------- gráficas inferiores ---------- */
+  .charts { position: fixed; left: 18px; right: var(--side); bottom: 92px; height: var(--charts-h); display: flex; gap: 14px; z-index: 800; }
+  .cbox { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; padding-top: 10px !important; padding-bottom: 8px !important; }
+  .cbox .px-panel__head { margin-bottom: 4px; }
+  .cbox canvas { flex: 1; width: 100%; min-height: 0; display: block; cursor: crosshair; }
+
   /* ---------- barra de tiempo ---------- */
-  .timebar { position: fixed; left: 18px; right: 424px; bottom: 14px; display: flex; gap: 14px; align-items: center;
+  .timebar { position: fixed; left: 18px; right: var(--side); bottom: 14px; display: flex; gap: 14px; align-items: center; z-index: 800;
              background: rgba(4,23,52,.88); padding: 10px 14px; box-shadow: 0 0 0 4px var(--ast-navy), 0 0 0 8px var(--ast-abyss); }
-  .clock { font-size: 26px; color: #e8f4ff; min-width: 170px; }
+  .clock { font-size: 26px; color: #e8f4ff; min-width: 210px; }
   input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 28px; background: transparent; border: 0; outline: none; cursor: pointer; }
   input[type=range]::-webkit-slider-runnable-track { height: 8px; background: var(--ast-navy); box-shadow: 0 0 0 2px var(--ast-abyss); }
   input[type=range]::-moz-range-track { height: 8px; background: var(--ast-navy); box-shadow: 0 0 0 2px var(--ast-abyss); }
@@ -78,18 +80,20 @@
   input[type=range]::-moz-range-thumb { width: 16px; height: 24px; background: var(--ast-orange); border: 0; border-radius: 0; box-shadow: 0 0 0 2px var(--ast-abyss); }
 
   @media (max-width: 900px) {
-    aside { top: auto; height: 46vh; width: auto; left: 10px; }
-    .top, .timebar { right: 18px; }
-    .timebar { bottom: calc(46vh + 24px); }
+    body { --side: 18px; --charts-h: 20vh; }
+    aside { top: auto; height: 34vh; width: auto; left: 10px; }
+    .timebar { bottom: calc(34vh + 24px); }
+    .charts { bottom: calc(34vh + 100px); }
   }
 </style>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="layers.js"></script>
 <script src="px-button.js" defer></script>
-<script src="gp-chart.js" defer></script>
+<script src="charts.js" defer></script>
 <script src="data/gp-data.js" defer></script>
 <script src="dem.js"></script>
 <script src="data/dem.js"></script>
+<script src="sim.js"></script>
 </head>
 <body>
   <div id="map"></div>
@@ -105,7 +109,6 @@
     <span class="demo" id="demo" hidden>DATOS DE DEMO — corre export_gp.py</span>
     <button class="px-btn" data-size="sm" id="base">BASE: IMAGEN</button>
     <label class="op" id="opBox" hidden>RELIEVE <input type="range" id="op" min="0" max="100" value="60" aria-label="Opacidad del relieve"></label>
-    <button class="px-btn" data-size="sm" id="mode">COLOR: MEDIA</button>
     <button class="px-btn" data-size="sm" id="edit">EDITAR RUTA</button>
     <button class="px-btn" data-size="sm" id="undo" hidden>DESHACER</button>
     <button class="px-btn" data-size="sm" data-variant="danger" id="clear" hidden>BORRAR</button>
@@ -113,6 +116,51 @@
   </div>
 
   <aside>
+    <!-- ===== TÉRMICO ===== -->
+    <section class="px-panel" data-view="term">
+      <div class="px-panel__head">
+        <span class="px-label" data-size="sm" data-color="#e8f4ff">PLAN DE SALIDA</span>
+        <div class="px-panel__meta" id="pMeta"></div>
+      </div>
+      <div class="rec" id="pRec">--</div>
+      <div class="state" id="pState">--</div>
+      <div class="why" id="pWhy"></div>
+      <div class="btns">
+        <button class="px-btn" data-size="sm" id="depM">-15 MIN</button>
+        <button class="px-btn" data-size="sm" id="depP">+15 MIN</button>
+        <button class="px-btn" data-size="sm" data-variant="danger" id="depBest">MEJOR SALIDA</button>
+      </div>
+      <div class="row"><span class="k">distancia</span><b id="pDist">--</b></div>
+      <div class="row"><span class="k">duración real</span><b id="pDur">--</b></div>
+      <div class="row"><span class="k">velocidad media</span><b id="pV">--</b></div>
+      <div class="row"><span class="k">energía (ESTIMADO)</span><b id="pE">--</b></div>
+      <div class="row"><span class="k">batería al llegar</span><b id="pSoc">--</b></div>
+      <div class="row"><span class="k">peor caso en ruta</span><b id="pTmin">--</b></div>
+      <div class="row"><span class="k">desnivel</span><b id="pUp">--</b></div>
+      <div class="note" id="pBest"></div>
+      <div class="note" id="pVeh"></div>
+    </section>
+
+    <section class="px-panel" data-view="term">
+      <div class="px-panel__head">
+        <span class="px-label" data-size="sm" data-color="#e8f4ff">EN RUTA AHORA</span>
+        <div class="px-panel__meta" id="where"></div>
+      </div>
+      <div class="big" id="tC">--</div>
+      <div class="row"><span class="k">aire (REMS + GP)</span><b id="tK">--</b></div>
+      <div class="row"><span class="k">peor caso (frío)</span><b id="worst">--</b></div>
+      <div class="row"><span class="k">confianza</span><b id="conf">--</b></div>
+      <div class="row"><span class="k">velocidad</span><b id="rV">--</b></div>
+      <div class="row"><span class="k">pendiente</span><b id="rTh">--</b></div>
+      <div class="row"><span class="k">potencia</span><b id="rP">--</b></div>
+      <div class="row"><span class="k">batería</span><b id="rSoc">--</b></div>
+      <div class="row"><span class="k">recorrido</span><b id="dist">--</b></div>
+      <div class="state" id="state">--</div>
+      <div class="advice" id="advice"></div>
+      <div class="note">La banda se decide con el peor caso (límite frío del 95 %), no con la media.</div>
+    </section>
+
+    <!-- ===== GEOTOPOLÓGICO ===== -->
     <section class="px-panel" data-view="geo" hidden>
       <div class="px-panel__head">
         <span class="px-label" data-size="sm" data-color="#e8f4ff">TERRENO EN RUTA</span>
@@ -122,63 +170,50 @@
       <div class="row"><span class="k">recorrido</span><b id="gDist">--</b></div>
       <div class="row"><span class="k">longitud total</span><b id="gLen">--</b></div>
       <div class="row"><span class="k">waypoints</span><b id="gWp">--</b></div>
-      <div class="row"><span class="k">cursor</span><b id="gCur">--</b></div>
       <div class="row"><span class="k">elevación (tú)</span><b id="gEl">--</b></div>
       <div class="row"><span class="k">pendiente (tú)</span><b id="gSl">--</b></div>
-      <div class="row"><span class="k">elev. / pend. cursor</span><b id="gCurE">--</b></div>
+      <div class="row"><span class="k">pendiente máx. ruta</span><b id="gThMax">--</b></div>
+      <div class="row"><span class="k">intransitable</span><b id="gBlk">--</b></div>
       <div class="row"><span class="k">desnivel ruta</span><b id="gUp">--</b></div>
+      <div class="row"><span class="k">cursor</span><b id="gCur">--</b></div>
+      <div class="row"><span class="k">elev. / pend. cursor</span><b id="gCurE">--</b></div>
       <div class="note" id="gSrc"></div>
-      <div class="note">Distancias geodésicas sobre Marte (R = 3389.5 km). El relieve de color es MOLA/HRSC (~200 m/px): orientativo, no sirve para pendientes de EVA.</div>
-    </section>
-
-    <section class="px-panel" data-view="term">
-      <div class="px-panel__head">
-        <span class="px-label" data-size="sm" data-color="#e8f4ff">LECTURA EN RUTA</span>
-        <div class="px-panel__meta" id="where"></div>
-      </div>
-      <div class="big" id="tC">--</div>
-      <div class="row"><span class="k">aire</span><b id="tK">-- K</b></div>
-      <div class="row"><span class="k">rango 95 %</span><b id="rng">--</b></div>
-      <div class="row"><span class="k">peor caso (frío)</span><b id="worst">--</b></div>
-      <div class="row"><span class="k">confianza</span><b id="conf">--</b></div>
-      <div class="row" id="distRow" hidden><span class="k">recorrido</span><b id="dist">--</b></div>
-      <div class="state" id="state">--</div>
-      <div class="advice" id="advice"></div>
-      <div class="scale" id="scale"></div>
-      <div class="scale-l" id="scaleL"></div>
-      <div class="note">El estado se decide con el peor caso (límite frío del 95 %), no con la media.</div>
-    </section>
-
-    <section class="px-panel" data-view="term">
-      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">TEMPERATURA DURANTE LA MISIÓN</span></div>
-      <div id="chartWrap"><div class="px-chart" id="chart"></div><div id="cursor"></div></div>
+      <div class="note">Pendiente con signo en el sentido de la marcha (+ sube). Distancias geodésicas sobre Marte (R = 3389.5 km). El relieve de color es MOLA/HRSC (~200 m/px), orientativo.</div>
     </section>
 
     <section class="px-panel help">
-      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">CÓMO LEER EL MAPA</span></div>
-      <p>La línea es tu ruta. Cada tramo tiene el color de la temperatura del aire <b>a la hora en que vas a pasar por ahí</b>.</p>
-      <p>El punto azul marca el momento más frío de la salida; el naranja eres tú en la hora de la barra de abajo.</p>
-      <p>La temperatura viene de REMS (Curiosity) e interpolada por el modelo. Vale para terreno llano cercano; no incluye sombras, pendientes ni la temperatura del suelo.</p>
-      <p><b>GEOTOPOLÓGICO</b>: la misma ruta sobre el relieve. Cambia la base con <b>BASE</b> y la transparencia con <b>RELIEVE</b>.</p>
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">CÓMO LEER</span></div>
+      <p><b>Pronóstico</b>: temperatura del aire de 3 sols (REMS de Curiosity + GP). La franja naranja es tu travesía; la tira de colores abajo dice si salir a esa hora es <b>GO</b> (verde), <b>precaución</b> (naranja) o <b>NO-GO</b> (rojo). Clic en la gráfica = elegir hora de salida.</p>
+      <p><b>Perfil</b>: elevación real (DEM USGS), velocidad del rover y batería a lo largo de la ruta. El rover frena en cuestas (potencia), curvas y bajadas; en rojo, tramos de más de 25°.</p>
+      <p>Tiempo real = conducción × <b>Ct</b> (paradas, maniobras, navegación).</p>
       <div class="credits" id="credits"></div>
     </section>
   </aside>
 
+  <div class="charts">
+    <section class="px-panel cbox" data-view="term">
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PRONÓSTICO 3 SOLS · CLIC PARA ELEGIR SALIDA</span></div>
+      <canvas id="cTemp"></canvas>
+    </section>
+    <section class="px-panel cbox">
+      <div class="px-panel__head"><span class="px-label" data-size="xs" data-color="#e8f4ff">PERFIL DE LA RUTA</span></div>
+      <canvas id="cProf"></canvas>
+    </section>
+  </div>
+
   <div class="timebar">
     <button class="px-btn" data-size="sm" id="play">PLAY</button>
-    <input type="range" id="time" min="0" max="1000" value="0" aria-label="Hora de la misión">
+    <input type="range" id="time" min="0" max="1000" value="0" aria-label="Momento de la travesía">
     <span class="clock" id="clock">--:--</span>
   </div>
 
 <script>
 /* =========================================================
-   CONFIGURACIÓN — lo único que deberías tocar
+   CONFIGURACIÓN
    ========================================================= */
 const CONFIG = {
   lugar: 'CRÁTER GALE',
-  escala: { min: 180, max: 280 },   // K que cubre la escala de color
-  // Bandas ILUSTRATIVAS por temperatura del aire (K). Cámbialas por los límites reales
-  // del traje / baterías / equipo que quieras modelar.
+  // Bandas ILUSTRATIVAS por temperatura del aire (K), peor caso.
   bandas: [
     { max: 203, nombre: 'FRÍO EXTREMO', color: '#7fb2ff',
       consejo: 'Calefacción del traje y baterías al máximo consumo. Acortar la salida o esperar a que suba el sol.' },
@@ -189,16 +224,19 @@ const CONFIG = {
     { max: Infinity, nombre: 'VENTANA TEMPLADA', color: '#f26306',
       consejo: 'Mejor ventana térmica del sol: buen momento para tareas largas o lejos de la base.' },
   ],
-  // Ruta demo [lat, lon] dentro de la cobertura HiRISE y de la caché offline (ui/tiles).
+  // Ruta demo [lat, lon] dentro de la cobertura HiRISE, del DEM y de la caché offline.
   rutaDemo: [[-4.7050, 137.3550], [-4.7120, 137.3620], [-4.7160, 137.3710], [-4.7240, 137.3760],
              [-4.7310, 137.3850], [-4.7380, 137.3910], [-4.7430, 137.3995]],
   // (con FIN en [-4.7440, 137.3990] la ruta cruza un escarpe de 31.5° → NO-GO; útil para la demo)
-  segundosAnimacion: 20,     // PLAY recorre toda la misión en este tiempo
+  salidaInicial: 9,          // h LTST del primer sol del pronóstico
+  pasoSalida: 15,            // min entre horas de salida candidatas
+  segundosAnimacion: 20,     // PLAY recorre toda la travesía en este tiempo
 };
-const STORE = 'astertrail.ruta.geo';   // [lat, lon]; la clave vieja (píxeles) ya no se usa
+const VERD = { 'GO': '#4fd27a', 'GO CON PRECAUCIÓN': '#f26306', 'NO-GO': '#ff3b1f' };
+const STORE = 'astertrail.ruta.geo';
 const A = window.AST_LAYERS;
 const dem = window.DEM_DATA ? DEM.from(window.DEM_DATA) : null;
-const fmtE = (lat, lon) => { const e = dem && dem.elev(lat, lon), sl = dem && dem.slope(lat, lon); return e === null || !dem ? 'fuera del DEM' : `${e.toFixed(0)} m · ${sl === null ? '--' : sl.toFixed(1) + '°'}`; };
+const SOL_S = 88775.244;
 
 /* ---------- utilidades ---------- */
 const $ = (id) => document.getElementById(id);
@@ -206,168 +244,204 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const toC = (k) => k - 273.15;
 const fmtC = (k) => (toC(k) >= 0 ? '+' : '') + toC(k).toFixed(0) + ' °C';
 const hhmm = (t) => {
-  const h = ((t % 1) + 1) % 1 * 24, H = Math.floor(h + 1e-6), M = Math.round((h - H) * 60);
-  return String((H + (M === 60 ? 1 : 0)) % 24).padStart(2, '0') + ':' + String(M % 60).padStart(2, '0');
+  const m = Math.round((((t % 1) + 1) % 1) * 24 * 60);
+  return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
 };
-const STOPS = [[0, '#1d2f7a'], [.3, '#2276c0'], [.55, '#51b4f5'], [.72, '#e8f4ff'], [.86, '#f26306'], [1, '#a10a04']];
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-function colorK(k) {
-  const f = clamp((k - CONFIG.escala.min) / (CONFIG.escala.max - CONFIG.escala.min), 0, 1);
-  let i = 1; while (i < STOPS.length - 1 && f > STOPS[i][0]) i++;
-  const [f0, c0] = STOPS[i - 1], [f1, c1] = STOPS[i], u = (f - f0) / (f1 - f0 || 1);
-  const a = hex(c0), b = hex(c1);
-  return 'rgb(' + a.map((v, j) => Math.round(v + (b[j] - v) * u)).join(',') + ')';
-}
+const solHh = (t) => `SOL ${Math.floor(t + 1e-9)} · ${hhmm(t)}`;
+const fmtKm = (m) => m < 1000 ? `${m.toFixed(0)} m` : `${(m / 1000).toFixed(2)} km`;
+const fmtMin = (s) => s < 3600 ? `${Math.round(s / 60)} min` : `${Math.floor(s / 3600)} h ${String(Math.round(s % 3600 / 60)).padStart(2, '0')} min`;
+const fmtLL = (lat, lon) => `${Math.abs(lat).toFixed(4)}° ${lat < 0 ? 'S' : 'N'}, ${lon.toFixed(4)}° E`;
+const fmtE = (lat, lon) => { if (!dem) return 'sin DEM'; const e = dem.elev(lat, lon), sl = dem.slope(lat, lon); return e === null ? 'fuera del DEM' : `${e.toFixed(0)} m · ${sl === null ? '--' : sl.toFixed(1) + '°'}`; };
 const banda = (k) => CONFIG.bandas.find((b) => k < b.max);
 const save = (r) => { try { localStorage.setItem(STORE, JSON.stringify(r)); } catch (e) {} };
 const load = () => { try { const r = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(r) && r.every((p) => Array.isArray(p) && Math.abs(p[0]) <= 90)) return r; } catch (e) {} return null; };
-const fmtKm = (m) => m < 1000 ? `${m.toFixed(0)} m` : `${(m / 1000).toFixed(2)} km`;
-const fmtLL = (lat, lon) => `${Math.abs(lat).toFixed(4)}° ${lat < 0 ? 'S' : 'N'}, ${lon.toFixed(4)}° E`;
 
-/* ---------- datos de demo si no hay export_gp.py ---------- */
-function demoData() {
-  const t0 = 1520 + 5 / 24, t1 = t0 + 9 / 24, n = 200, t = [], mu = [], sigma = [];
-  for (let i = 0; i < n; i++) {
-    const ti = t0 + (t1 - t0) * i / (n - 1), h = (ti % 1) * 24;
-    t.push(ti); mu.push(222 + 34 * Math.sin(2 * Math.PI * (h - 8.5) / 24) + 4 * Math.sin(h));
-    sigma.push(2 + 2.5 * Math.abs(Math.sin(i / 25)));
-  }
-  return { meta: { n_fit: 0, demo: true }, mission: { t0, t1, sol: 1520, ltst_start: 5, hours: 9 },
-           obs: { t: [], x: [] }, hidden: { t: [], x: [] },
-           pred: { t, mu, sigma, lo95: mu.map((m, i) => m - 1.96 * sigma[i]), hi95: mu.map((m, i) => m + 1.96 * sigma[i]) } };
+function demoData() {        // solo si falta export_gp.py: curva diaria sintética de 3 sols
+  const t0 = 1520, t1 = 1523, n = 600, t = [], mu = [], sigma = [];
+  for (let i = 0; i < n; i++) { const ti = t0 + (t1 - t0) * i / (n - 1), h = (ti % 1) * 24;
+    t.push(ti); mu.push(225 + 32 * Math.sin(2 * Math.PI * (h - 8.5) / 24)); sigma.push(3); }
+  return { meta: { n_fit: 0, demo: true }, mission: { t0, t1, sol: 1520, ltst_start: 0, hours: 72 },
+           obs: { t: [], x: [] }, hidden: { t: [], x: [] }, pred: { t, mu, sigma } };
 }
 
 /* ---------- estado ---------- */
-let D, f = 0, view = 'term', baseKey = 'imagen';
+let D, R = null, V = null, scan = null, tDep = 0, f = 0, view = 'term', baseKey = 'imagen';
 let route = load() || CONFIG.rutaDemo.map((p) => p.slice());
-let editing = false, worstMode = false, playing = false;
+let editing = false, playing = false;
 
 /* ---------- mapa Leaflet (Mars Trek) ---------- */
-const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: 3, maxZoom: 19,
-                           zoomControl: false, attributionControl: false });
+const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: 3, maxZoom: 19, zoomControl: false, attributionControl: false });
 L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 const BASES = A.bases(L);
 const baseLayers = { imagen: BASES['IMAGEN · HiRISE/CTX'], relieve: BASES['RELIEVE · MOLA/HRSC'] };
-const reliefOver = A.tile(L, 'relieve', { opacity: 0.6, zIndex: 5 });   // relieve semitransparente en GEOTOPOLÓGICO
+const reliefOver = A.tile(L, 'relieve', { opacity: 0.6, zIndex: 5 });
 baseLayers.imagen.addTo(map);
 const routeLayer = L.layerGroup().addTo(map), pinLayer = L.layerGroup().addTo(map);
 const icon = (cls, html = '') => L.divIcon({ className: 'pw', iconSize: [0, 0], html: `<div class="pin ${cls}">${html}</div>` });
 const astro = L.marker(A.CENTER, { icon: icon('astro'), interactive: false, zIndexOffset: 1000 });
 
-/* ---------- geometría de la ruta (geodésica) ---------- */
-function geom() {
-  const p = route, cum = [0];
-  for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + A.dist(p[i - 1], p[i]));
-  return { p, cum, L: cum[cum.length - 1] || 0 };
+/* ---------- simulación ---------- */
+function forecast() { const P = D.pred; return [P.t[0], P.t[P.t.length - 1]]; }
+function resim() {
+  R = route.length > 1 ? SIM.simulate({ route, dem, gp: D, t0: tDep }) : null;
+  V = R ? SIM.verdict(R) : null;
 }
-function posAt(g, u) {                    // u en [0,1] a lo largo de la ruta (por distancia)
-  if (g.p.length === 1 || g.L === 0) return g.p[0];
-  const d = u * g.L; let i = 1;
-  while (i < g.cum.length - 1 && g.cum[i] < d) i++;
-  const v = (d - g.cum[i - 1]) / (g.cum[i] - g.cum[i - 1] || 1);
-  return [g.p[i - 1][0] + (g.p[i][0] - g.p[i - 1][0]) * v, g.p[i - 1][1] + (g.p[i][1] - g.p[i - 1][1]) * v];
+function rescan() {
+  if (route.length < 2) { scan = null; return; }
+  const [a, b] = forecast(), st = CONFIG.pasoSalida / 1440, ts = [];
+  for (let t = a; t <= b; t += st) ts.push(+t.toFixed(6));
+  scan = SIM.scanDepartures({ route, dem, gp: D }, ts);
+  scan.step = st;
 }
-const fracOf = (t) => (t - D.mission.t0) / (D.mission.t1 - D.mission.t0);
-const metric = (i) => worstMode ? D.pred.mu[i] - 1.96 * D.pred.sigma[i] : D.pred.mu[i];
-function sample(u) {                      // GP interpolado linealmente en la fracción u de la misión
-  const P = D.pred, t = D.mission.t0 + u * (D.mission.t1 - D.mission.t0);
-  let i = 1; while (i < P.t.length - 1 && P.t[i] < t) i++;
-  const v = clamp((t - P.t[i - 1]) / (P.t[i] - P.t[i - 1] || 1), 0, 1);
-  const L = (a) => a[i - 1] + (a[i] - a[i - 1]) * v;
-  return { t, mu: L(P.mu), sd: L(P.sigma) };
+function sampleAt(u) {                    // estado interpolado en la fracción u del tiempo de la travesía
+  const s = R.s, t = R.summary.t0 + u * (R.summary.t1 - R.summary.t0);
+  let lo = 0, hi = s.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (s[m].t <= t) lo = m; else hi = m; }
+  const v = clamp((t - s[lo].t) / (s[hi].t - s[lo].t || 1), 0, 1), a = s[lo], b = s[hi];
+  const I = (k) => (a[k] == null || b[k] == null) ? (a[k] ?? b[k]) : a[k] + (b[k] - a[k]) * v;
+  return { t, i: v < .5 ? lo : hi, lat: I('lat'), lon: I('lon'), dist: I('dist'), elev: I('elev'), theta: I('theta'),
+           v: I('v'), T: I('T'), Tlo: I('Tlo'), sd: I('sd'), P: I('P_tot'), SOC: I('SOC'), lim: (v < .5 ? a : b).lim };
 }
 
-/* ---------- dibujo ---------- */
+/* ---------- dibujo del mapa ---------- */
+function runs(pred) {                     // tramos contiguos de muestras que cumplen pred
+  const out = []; let cur = null;
+  R.s.forEach((p) => { if (pred(p)) { (cur || (cur = [])).push([p.lat, p.lon]); } else if (cur) { out.push(cur); cur = null; } });
+  if (cur) out.push(cur); return out;
+}
 function drawRoute() {
   routeLayer.clearLayers();
   if (route.length < 2) return;
-  const g = geom();
-  L.polyline(g.p, { color: '#041734', weight: 11, lineJoin: 'round', interactive: false }).addTo(routeLayer);
-  if (view === 'geo') {                  // terreno: ruta neutra, sin temperatura
-    L.polyline(g.p, { color: '#f26306', weight: 5, dashArray: '10 6', interactive: false }).addTo(routeLayer);
-    return;
-  }
-  const P = D.pred;
-  for (let i = 0; i < P.t.length - 1; i++) {
-    const a = posAt(g, clamp(fracOf(P.t[i]), 0, 1)), b = posAt(g, clamp(fracOf(P.t[i + 1]), 0, 1));
-    L.polyline([a, b], { color: colorK(metric(i)), weight: 6, lineCap: 'round', interactive: false }).addTo(routeLayer);
-  }
+  L.polyline(route, { color: '#041734', weight: 11, lineJoin: 'round', interactive: false }).addTo(routeLayer);
+  L.polyline(route, { color: view === 'geo' ? '#f26306' : '#e8f4ff', weight: 5, dashArray: view === 'geo' ? '10 6' : null, interactive: false }).addTo(routeLayer);
+  if (R) runs((p) => p.blocked).forEach((seg) => L.polyline(seg.length > 1 ? seg : [seg[0], seg[0]], { color: '#ff3b1f', weight: 9, interactive: false }).addTo(routeLayer));
 }
 function drawPins() {
   pinLayer.clearLayers();
-  if (!route.length) { astro.remove(); return; }
-  const g = geom();
-  g.p.forEach((q, i) => L.marker(q, { icon: icon('wp', editing ? `<span>${i + 1}</span>` : ''), interactive: false }).addTo(pinLayer));
-  if (route.length < 2) { astro.remove(); return; }
-  L.marker(g.p[0], { icon: icon('tag', 'INICIO ' + hhmm(D.mission.t0)), interactive: false }).addTo(pinLayer);
-  L.marker(g.p[g.p.length - 1], { icon: icon('tag', 'FIN ' + hhmm(D.mission.t1)), interactive: false }).addTo(pinLayer);
-  if (view === 'term') {                 // momento más frío de la salida (según el modo de color)
-    let im = 0; for (let i = 1; i < D.pred.t.length; i++) if (metric(i) < metric(im)) im = i;
-    const c = posAt(g, clamp(fracOf(D.pred.t[im]), 0, 1));
-    L.marker(c, { icon: icon('cold-dot'), interactive: false }).addTo(pinLayer);
-    L.marker(c, { icon: icon('tag cold', `MÍN ${hhmm(D.pred.t[im])} · ${fmtC(metric(im))}`), interactive: false }).addTo(pinLayer);
+  route.forEach((q, i) => L.marker(q, { icon: icon('wp', editing ? `<span>${i + 1}</span>` : ''), interactive: false }).addTo(pinLayer));
+  if (!R) { astro.remove(); return; }
+  const S = R.summary, s = R.s;
+  L.marker(route[0], { icon: icon('tag', 'SALIDA ' + hhmm(S.t0)), interactive: false }).addTo(pinLayer);
+  L.marker(route[route.length - 1], { icon: icon('tag', 'LLEGADA ' + hhmm(S.t1)), interactive: false }).addTo(pinLayer);
+  if (view === 'term' && S.Tlo_min != null) {
+    const p = s.find((q) => q.t === S.t_Tlo_min) || s[0];
+    L.marker([p.lat, p.lon], { icon: icon('cold-dot'), interactive: false }).addTo(pinLayer);
+    L.marker([p.lat, p.lon], { icon: icon('tag cold', `MÍN ${hhmm(p.t)} · ${fmtC(S.Tlo_min)}`), interactive: false }).addTo(pinLayer);
   }
-  astro.addTo(map); moveAstro(g);
+  const b = s.find((q) => q.blocked);
+  if (b) L.marker([b.lat, b.lon], { icon: icon('tag bad', `> ${R.vehicle.theta_max}° INTRANSITABLE`), interactive: false }).addTo(pinLayer);
+  astro.addTo(map); moveAstro();
 }
-function moveAstro(g = geom()) { if (route.length > 1) astro.setLatLng(posAt(g, f)); }
+function moveAstro() { if (R) { const q = sampleAt(f); astro.setLatLng([q.lat, q.lon]); } }
 function fit() {
   if (route.length < 2) { map.setView(A.CENTER, A.ZOOM); return; }
-  const narrow = innerWidth <= 900;
-  map.fitBounds(L.latLngBounds(route), { paddingTopLeft: [30, 90],
-    paddingBottomRight: narrow ? [30, innerHeight * 0.46 + 110] : [440, 100] });
+  const narrow = innerWidth <= 900, ch = $('cProf').closest('.charts').offsetHeight;
+  map.fitBounds(L.latLngBounds(route), { paddingTopLeft: [30, 170],
+    paddingBottomRight: narrow ? [30, innerHeight * 0.34 + ch + 120] : [440, ch + 120] });
 }
 
-/* ---------- panel ---------- */
-function update() {
-  const r = sample(f), lo = r.mu - 1.96 * r.sd, hi = r.mu + 1.96 * r.sd, b = banda(lo);
-  const sol = Math.floor(r.t + 1e-9);
-  $('clock').textContent = `SOL ${sol} · ${hhmm(r.t)}`;
-  $('where').textContent = `${CONFIG.lugar} · ${hhmm(r.t)} LTST`;
-  $('tC').innerHTML = `${fmtC(r.mu)}`;
-  $('tK').textContent = `${r.mu.toFixed(1)} K`;
-  $('rng').textContent = `${fmtC(lo)} a ${fmtC(hi)}`;
-  $('worst').textContent = `${fmtC(lo)}  (${lo.toFixed(0)} K)`;
-  $('conf').textContent = r.sd < 2 ? `ALTA  ±${r.sd.toFixed(1)} K` : r.sd < 5 ? `MEDIA  ±${r.sd.toFixed(1)} K` : `BAJA  ±${r.sd.toFixed(1)} K — pocos datos`;
-  $('state').textContent = b.nombre; $('state').style.background = b.color;
-  $('advice').textContent = b.consejo;
-  const g = geom();
-  $('distRow').hidden = route.length < 2;
-  if (route.length > 1) {
-    $('dist').textContent = `${fmtKm(f * g.L)} de ${fmtKm(g.L)}`;
-    const q = posAt(g, f);
-    $('gPos').textContent = fmtLL(q[0], q[1]); $('gDist').textContent = fmtKm(f * g.L);
-    const e = dem && dem.elev(q[0], q[1]), sl = dem && dem.slope(q[0], q[1]);
-    $('gEl').textContent = e == null ? 'fuera del DEM' : `${e.toFixed(0)} m`;
-    $('gSl').textContent = sl == null ? '--' : `${sl.toFixed(1)}°`;
-  } else { $('gPos').textContent = $('gDist').textContent = '--'; }
-  $('gLen').textContent = route.length > 1 ? fmtKm(g.L) : '--';
-  $('gWp').textContent = route.length;
-  if (dem && route.length > 1) {          // desnivel acumulado muestreando cada ~10 m
-    let up = 0, dn = 0, prev = null; const n = Math.max(2, Math.ceil(g.L / 10));
-    for (let k = 0; k <= n; k++) { const q = posAt(g, k / n), e = dem.elev(q[0], q[1]); if (e != null && prev != null) { if (e > prev) up += e - prev; else dn += prev - e; } if (e != null) prev = e; }
-    $('gUp').textContent = `+${up.toFixed(0)} m / −${dn.toFixed(0)} m`;
+/* ---------- gráficas ---------- */
+let chT = null, chP = null;
+function drawCharts() {
+  const P = D.pred, [a, b] = forecast(), cur = R ? sampleAt(f) : null;
+  if (view === 'term') {
+    const lo = P.mu.map((m, i) => m - 1.96 * P.sigma[i]), hi = P.mu.map((m, i) => m + 1.96 * P.sigma[i]);
+    const ymin = Math.floor((Math.min(...lo) - 4) / 10) * 10, ymax = Math.ceil((Math.max(...hi) + 4) / 10) * 10;
+    const pxSol = ($('cTemp').clientWidth - 110) / (b - a), ticks = [];   // rótulos según el espacio disponible
+    for (let t = Math.ceil(a * 4) / 4; t <= b + 1e-9; t += 0.25) {
+      const mid = Math.abs(t % 1) < 1e-6, noon = Math.abs((t % 1) - 0.5) < 1e-6;
+      ticks.push({ v: t, label: mid ? (pxSol > 130 ? `SOL ${Math.round(t)}` : `${Math.round(t)}`) : (noon && pxSol > 260 ? '12:00' : '') });
+    }
+    const hid = D.hidden || { t: [], x: [] };
+    const strips = scan ? scan.all.map((x) => ({ a: x.t0, b: x.t0 + scan.step, color: VERD[x.v.level] })) : [];
+    chT = AstChart.draw($('cTemp'), { x0: a, x1: b, xTicks: ticks, cursor: cur && cur.t,
+      spans: R ? [{ a: R.summary.t0, b: R.summary.t1, color: 'rgba(242,99,6,.35)' }] : [],
+      panes: [{ left: { min: ymin, max: ymax, label: 'T AIRE (K)', n: 3 },
+        areas: [{ xs: P.t, lo, hi, color: 'rgba(81,180,245,.25)' }],
+        hlines: CONFIG.bandas.filter((x) => x.max < 1e9 && x.max > ymin && x.max < ymax).map((x) => ({ y: x.max, color: x.color })),
+        dots: [{ xs: hid.t.filter((_, i) => i % 3 === 0), ys: hid.x.filter((_, i) => i % 3 === 0), color: '#f26306', size: 2 }],
+        lines: [{ xs: P.t, ys: P.mu, color: '#51b4f5', width: 2 }], strips }] });
   }
-  $('gSrc').textContent = dem ? `Elevación y pendiente: ${dem.meta.source}, a ${dem.meta.res_m} m. Fuera del recorte no hay dato.` : 'Sin DEM: corre scripts/export_dem.py';
-  $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(r.t)} LTST`;
-  const cb = $('chart').querySelector('canvas');
-  if (cb) { const w = cb.clientWidth; Object.assign($('cursor').style, { left: (70 + f * (w - 96)) + 'px', height: (cb.clientHeight - 96) + 'px' }); }
-  moveAstro(g);
+  if (!R) { const g = $('cProf').getContext('2d'); g.clearRect(0, 0, $('cProf').width, $('cProf').height); chP = null; return; }
+  const s = R.s, k = Math.max(1, Math.floor(s.length / 500)), ss = s.filter((_, i) => i % k === 0 || i === s.length - 1);
+  const km = ss.map((p) => p.dist / 1000), el = ss.map((p) => p.elev), L0 = s[s.length - 1].dist / 1000;
+  const emin = Math.floor((Math.min(...el) - 10) / 50) * 50, emax = Math.ceil((Math.max(...el) + 10) / 50) * 50;
+  const blk = []; let st = null;
+  s.forEach((p, i) => { if (p.blocked && st == null) st = p.dist; if ((!p.blocked || i === s.length - 1) && st != null) { blk.push({ a: st / 1000, b: p.dist / 1000, color: 'rgba(255,59,31,.55)' }); st = null; } });
+  const xt = AstChart.niceTicks(0, L0, 5).map((v) => ({ v, label: v + ' km' }));
+  chP = AstChart.draw($('cProf'), { x0: 0, x1: L0, xTicks: xt, cursor: cur && cur.dist / 1000, spans: blk,
+    panes: [
+      { h: 0.55, left: { min: emin, max: emax, label: 'ELEVACIÓN (KM)', n: 2, fmt: (v) => (v / 1000).toFixed(1) }, areas: [{ xs: km, ys: el, color: 'rgba(34,118,192,.75)' }],
+        lines: [{ xs: km, ys: el, color: '#51b4f5', width: 2 }] },
+      { h: 0.45, left: { min: 0, max: 10, label: 'V (KM/H)', color: '#bfe6ff', ticks: [0, 5, 10] },
+        right: { min: 0, max: 100, label: 'BATERÍA %', color: '#f26306', ticks: [0, 50, 100] },
+        hlines: [{ axis: 'right', y: R.vehicle.soc_min * 100, color: '#a10a04' }],
+        lines: [{ xs: km, ys: ss.map((p) => p.v * 3.6), color: '#bfe6ff', width: 2 },
+                { axis: 'right', xs: km, ys: ss.map((p) => p.SOC * 100), color: '#f26306', width: 2 }] },
+    ] });
 }
-function drawChart() { GPChart.draw($('chart'), D, { height: 230 }); update(); }
-function legend() {
-  const { min, max } = CONFIG.escala, n = 24, parts = [];
-  for (let i = 0; i <= n; i++) parts.push(`${colorK(min + (max - min) * i / n)} ${(i / n * 100).toFixed(1)}%`);
-  $('scale').style.background = `linear-gradient(90deg, ${parts.join(',')})`;
-  $('scaleL').innerHTML = [min, (min + max) / 2, max].map((k) => `<span>${fmtC(k)}</span>`).join('');
+
+/* ---------- paneles ---------- */
+function plan() {
+  if (!R) { ['pRec', 'pDist', 'pDur', 'pV', 'pE', 'pSoc', 'pTmin', 'pUp'].forEach((id) => { $(id).textContent = '--'; });
+    $('pState').textContent = 'TRAZA UNA RUTA'; $('pState').style.background = '#9fc8ea'; $('pWhy').textContent = ''; return; }
+  const S = R.summary;
+  $('pRec').innerHTML = `SAL <b>${solHh(S.t0)}</b><br>LLEGAS <b>${solHh(S.t1)}</b>`;
+  $('pState').textContent = V.level; $('pState').style.background = VERD[V.level];
+  $('pWhy').textContent = V.why.join(' · ');
+  $('pDist').textContent = fmtKm(S.dist_m);
+  $('pDur').textContent = `${fmtMin(S.dur_s)}  (${fmtMin(S.drive_s)} × Ct ${S.Ct})`;
+  $('pV').textContent = `${S.v_media_kmh.toFixed(1)} km/h · real ${S.v_media_real_kmh.toFixed(1)}`;
+  $('pE').textContent = `${S.E_Wh.toFixed(0)} Wh · ${S.Wh_km.toFixed(0)} Wh/km`;
+  $('pSoc').textContent = `${(S.SOC_end * 100).toFixed(0)} %`;
+  $('pTmin').textContent = S.Tlo_min == null ? 'fuera de pronóstico' : `${fmtC(S.Tlo_min)} a las ${hhmm(S.t_Tlo_min)}`;
+  $('pUp').textContent = `+${S.desnivel_up.toFixed(0)} m / −${S.desnivel_dn.toFixed(0)} m`;
+  $('pMeta').textContent = `${CONFIG.lugar} · salida cada ${CONFIG.pasoSalida} min`;
+  if (scan) { const B = scan.best;
+    $('pBest').innerHTML = `Mejor salida del pronóstico: <b style="color:${VERD[B.v.level]}">${solHh(B.t0)}</b> (${B.v.level}, peor caso ${B.r.summary.Tlo_min == null ? '--' : fmtC(B.r.summary.Tlo_min)}). Criterio: viable, la más templada; empate → menos energía.`; }
+  $('pVeh').textContent = `Vehículo: ${R.vehicle.nombre} · ${R.vehicle.m} kg · ${R.vehicle.P_max} W · ${(R.vehicle.E_bat / 1000).toFixed(1)} kWh · REFERENCIA, VERIFICAR`;
+  const g = R.s;
+  $('gThMax').textContent = `${S.theta_max_ruta.toFixed(1)}°`;
+  $('gBlk').textContent = S.blocked_m > 0 ? `${S.blocked_m.toFixed(0)} m (> ${R.vehicle.theta_max}°)` : 'ninguno';
+  $('gUp').textContent = $('pUp').textContent;
+  $('gLen').textContent = fmtKm(S.dist_m);
 }
+function update() {
+  $('gWp').textContent = route.length;
+  $('gSrc').textContent = dem ? `Elevación y pendiente: ${dem.meta.source}, a ${dem.meta.res_m} m.` : 'Sin DEM: corre scripts/export_dem.py';
+  if (!R) { $('clock').textContent = '--:--'; drawCharts(); return; }
+  const q = sampleAt(f), b = q.Tlo != null ? banda(q.Tlo) : null;
+  $('clock').textContent = solHh(q.t);
+  $('where').textContent = `${CONFIG.lugar} · ${hhmm(q.t)} LTST`;
+  $('tC').textContent = q.T != null ? fmtC(q.T) : '--';
+  $('tK').textContent = q.T != null ? `${q.T.toFixed(1)} K` : 'fuera de pronóstico';
+  $('worst').textContent = q.Tlo != null ? `${fmtC(q.Tlo)}  (${q.Tlo.toFixed(0)} K)` : '--';
+  $('conf').textContent = q.sd == null ? '--' : q.sd < 2 ? `ALTA ±${q.sd.toFixed(1)} K` : q.sd < 5 ? `MEDIA ±${q.sd.toFixed(1)} K` : `BAJA ±${q.sd.toFixed(1)} K`;
+  $('rV').textContent = `${(q.v * 3.6).toFixed(1)} km/h · ${q.lim}`;
+  $('rTh').textContent = `${(q.theta * 180 / Math.PI).toFixed(1)}°`;
+  $('rP').textContent = `${q.P.toFixed(0)} W`;
+  $('rSoc').textContent = `${(q.SOC * 100).toFixed(1)} %`;
+  $('dist').textContent = `${fmtKm(q.dist)} de ${fmtKm(R.summary.dist_m)}`;
+  $('state').textContent = b ? b.nombre : '--'; $('state').style.background = b ? b.color : '#9fc8ea';
+  $('advice').textContent = b ? b.consejo : '';
+  $('gPos').textContent = fmtLL(q.lat, q.lon); $('gDist').textContent = fmtKm(q.dist);
+  $('gEl').textContent = `${q.elev.toFixed(0)} m`; $('gSl').textContent = `${(q.theta * 180 / Math.PI).toFixed(1)}°`;
+  $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(q.t)} LTST`;
+  moveAstro(); drawCharts();
+}
+function redraw() { resim(); drawRoute(); drawPins(); plan(); update(); }
+function routeChanged() { save(route); rescan(); redraw(); }
+function setDep(t) { const [a, b] = forecast(); tDep = clamp(+t.toFixed(6), a, b); f = 0; $('time').value = 0; redraw(); }
 
 /* ---------- interacción ---------- */
-map.on('click', (e) => {
-  if (!editing) return;
-  route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); save(route); redraw();
-});
+map.on('click', (e) => { if (!editing) return; route.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); routeChanged(); });
 map.on('mousemove', (e) => { $('gCur').textContent = fmtLL(e.latlng.lat, e.latlng.lng); $('gCurE').textContent = fmtE(e.latlng.lat, e.latlng.lng); });
-function redraw() { drawRoute(); drawPins(); update(); }
+$('cTemp').addEventListener('click', (e) => { const t = chT && chT.xAt(e.clientX); if (t != null) setDep(Math.round(t * 1440 / CONFIG.pasoSalida) * CONFIG.pasoSalida / 1440); });
+$('cTemp').addEventListener('mousemove', (e) => { const t = chT && chT.xAt(e.clientX); if (t == null || !R) return;
+  const S = R.summary; if (t >= S.t0 && t <= S.t1) { f = (t - S.t0) / (S.t1 - S.t0); $('time').value = Math.round(f * 1000); update(); } });
+$('cProf').addEventListener('mousemove', (e) => { const x = chP && chP.xAt(e.clientX); if (x == null || !R) return;
+  const d = x * 1000, s = R.s; let i = 0; while (i < s.length - 1 && s[i].dist < d) i++;
+  f = (s[i].t - R.summary.t0) / (R.summary.t1 - R.summary.t0 || 1); $('time').value = Math.round(f * 1000); update(); });
 
 function relabel(btn, txt) { btn.dataset.label = txt; btn.textContent = txt; PxButton.render(btn); }
 $('edit').onclick = () => {
@@ -377,34 +451,13 @@ $('edit').onclick = () => {
   if (editing) { PxButton.render($('undo')); PxButton.render($('clear')); }
   drawPins();
 };
-$('undo').onclick = () => { route.pop(); save(route); redraw(); };
-$('clear').onclick = () => { route = []; save(route); redraw(); };
-$('mode').onclick = () => { worstMode = !worstMode; relabel($('mode'), worstMode ? 'COLOR: PEOR CASO' : 'COLOR: MEDIA'); redraw(); };
-
-/* ---------- pestañas TÉRMICO / GEOTOPOLÓGICO y capa base ---------- */
-function setBase(k) {
-  baseKey = k; map.removeLayer(baseLayers.imagen); map.removeLayer(baseLayers.relieve);
-  baseLayers[k].addTo(map);
-  if (view === 'geo' && k === 'imagen') reliefOver.addTo(map); else map.removeLayer(reliefOver);
-  $('opBox').hidden = !(view === 'geo' && k === 'imagen');
-  relabel($('base'), k === 'imagen' ? 'BASE: IMAGEN' : 'BASE: RELIEVE');
-}
-function setView(v) {
-  view = v;
-  const tab = (b, on) => { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); };
-  tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo');
-  document.querySelectorAll('[data-view]').forEach((e) => { e.hidden = e.dataset.view !== v; });
-  $('mode').hidden = v !== 'term';
-  try { history.replaceState(null, '', v === 'geo' ? '#geo' : '#termico'); } catch (e) {}
-  setBase(baseKey); redraw();
-  if (v === 'term') drawChart();
-}
-$('tabTerm').onclick = () => setView('term');
-$('tabGeo').onclick = () => setView('geo');
-$('base').onclick = () => setBase(baseKey === 'imagen' ? 'relieve' : 'imagen');
-$('op').oninput = (e) => reliefOver.setOpacity(e.target.value / 100);
+$('undo').onclick = () => { route.pop(); routeChanged(); };
+$('clear').onclick = () => { route = []; routeChanged(); };
 $('fit').onclick = fit;
 $('back').onclick = () => history.back();
+$('depM').onclick = () => setDep(tDep - CONFIG.pasoSalida / 1440);
+$('depP').onclick = () => setDep(tDep + CONFIG.pasoSalida / 1440);
+$('depBest').onclick = () => { if (scan) setDep(scan.best.t0); };
 $('time').oninput = (e) => { f = e.target.value / 1000; update(); };
 $('play').onclick = () => {
   playing = !playing; relabel($('play'), playing ? 'PAUSA' : 'PLAY');
@@ -420,17 +473,38 @@ $('play').onclick = () => {
   requestAnimationFrame(step);
 };
 
+/* ---------- pestañas y capa base ---------- */
+function setBase(k) {
+  baseKey = k; map.removeLayer(baseLayers.imagen); map.removeLayer(baseLayers.relieve);
+  baseLayers[k].addTo(map);
+  if (view === 'geo' && k === 'imagen') reliefOver.addTo(map); else map.removeLayer(reliefOver);
+  $('opBox').hidden = !(view === 'geo' && k === 'imagen');
+  relabel($('base'), k === 'imagen' ? 'BASE: IMAGEN' : 'BASE: RELIEVE');
+}
+function setView(v) {
+  view = v;
+  const tab = (b, on) => { b.dataset.variant = on ? 'danger' : 'blue'; PxButton.render(b); };
+  tab($('tabTerm'), v === 'term'); tab($('tabGeo'), v === 'geo');
+  document.querySelectorAll('[data-view]').forEach((e) => { e.hidden = e.dataset.view !== v; });
+  document.querySelectorAll('aside .px-btn').forEach((b) => PxButton.render(b));
+  try { history.replaceState(null, '', location.search + (v === 'geo' ? '#geo' : '#termico')); } catch (e) {}
+  setBase(baseKey); drawRoute(); drawPins(); update();
+}
+$('tabTerm').onclick = () => setView('term');
+$('tabGeo').onclick = () => setView('geo');
+$('base').onclick = () => setBase(baseKey === 'imagen' ? 'relieve' : 'imagen');
+$('op').oninput = (e) => reliefOver.setOpacity(e.target.value / 100);
+
 /* ---------- arranque ---------- */
 window.addEventListener('DOMContentLoaded', async () => {
   D = window.GP_DATA;
   if (!D) { try { D = await (await fetch('data/gp.json')).json(); } catch (e) {} }
   if (!D || !D.pred || !D.pred.t || !D.pred.t.length) { D = demoData(); $('demo').hidden = false; }
-  legend();
-  $('credits').textContent = A.CREDITS + (A.OFFLINE ? ' · teselas offline (ui/tiles)' : '');
-  fit();
-  setView(location.hash === '#geo' ? 'geo' : 'term');
-
-  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { map.invalidateSize(); if (view === 'term') drawChart(); }, 120); });
+  $('credits').textContent = A.CREDITS + ' · Elevación: USGS Astrogeology (DEM MSL Gale 1 m) · Temperatura: MSL REMS (NASA/JPL-Caltech, CAB)' + (A.OFFLINE ? ' · teselas offline' : '');
+  tDep = forecast()[0] + CONFIG.salidaInicial / 24;
+  rescan(); resim(); fit();
+  setView(location.hash === '#geo' ? 'geo' : 'term'); plan();
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { map.invalidateSize(); update(); }, 120); });
 });
 </script>
 </body>

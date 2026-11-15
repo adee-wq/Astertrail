@@ -18,7 +18,7 @@ import numpy as np
 import data as D
 from eval import gp
 
-CFG = dict(src=['data/raw/rems_air.csv'], out='ui/data', n_fit=500, n_grid=400, seed=0)
+CFG = dict(src=['data/raw/rems_air.csv'], out='ui/data', n_fit=500, n_grid=900, seed=0)
 
 def main():
     ap = argparse.ArgumentParser()

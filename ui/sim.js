@@ -95,12 +95,16 @@
     if (last == null) s.forEach((p) => { p.elev = 0; });
     else { let first = s.find((p) => !p.noDem).elev; for (const p of s) { if (!p.noDem) break; p.elev = first; } }
 
+    // perfil suavizado (media móvil ±10 m): quita el ruido de celda del DEM sin borrar escarpes reales
+    const ws = Math.max(1, Math.round(10 / V.ds)), ez = s.map((p) => p.elev);
+    s.forEach((p, i) => { let a = 0, c = 0; for (let k = Math.max(0, i - ws); k <= Math.min(n - 1, i + ws); k++) { a += ez[k]; c++; } p.elevS = a / c; });
+
     // pendiente con signo (a lo largo de la marcha) y curvatura κ = Δrumbo / Δs (ventana de ±w muestras)
     const w = Math.max(1, Math.round(5 / V.ds));   // ventana ±5 m: giro de radio pequeño (LRV ≈ 3 m)
     for (let i = 0; i < n; i++) {
       const a = s[Math.max(0, i - 1)], b = s[Math.min(n - 1, i + 1)];
       const dd = b.dist - a.dist;
-      s[i].theta = dd > 0 ? Math.atan((b.elev - a.elev) / dd) : 0;
+      s[i].theta = dd > 0 ? Math.atan((b.elevS - a.elevS) / dd) : 0;
       const i0 = Math.max(0, i - w), i1 = Math.min(n - 1, i + w);
       if (i1 - i0 >= 2) {
         const h0 = bearing([s[i0].lat, s[i0].lon], [s[i].lat, s[i].lon]);
