@@ -60,13 +60,22 @@
 | A Mission Manager | `ui/missions.js` (misiones, objetivo, radio, ida y vuelta, condiciones de fin) | por hacer |
 | B Map Data Adapter | `layers.js`, `dem.js`, `data/dem.js`, `data/gp-data.js` (solo lectura) | **existe** |
 | C Route Planner | en `trace.html`: añadir, mover (arrastre), insertar, borrar waypoint; distancias | parcial (mapa.html) |
-| D Terrain Analyzer | `ui/terrain.js`: elevación, pendiente, **rugosidad** (RMS del DEM sin tendencia), accesibilidad | por hacer |
-| E Route Evaluator | `ui/rss.js` puro + `rss.test.js`: S, G, T, A por segmento, Rᵢ = .35S+.30G+.20T+.15A, RSS ponderado por distancia, penalizaciones | por hacer |
+| D Terrain Analyzer | `ui/modules/trace/terrain.js`: elevación, pendiente, **rugosidad** (RMS del DEM sin tendencia), accesibilidad | por hacer |
+| E Route Evaluator | `ui/modules/trace/rss.js` puro + `rss.test.js`: S, G, T, A por segmento, Rᵢ = .35S+.30G+.20T+.15A, RSS ponderado por distancia, penalizaciones | por hacer |
 | F Rover Simulator | `sim.js` (+ regla de misión: detenerse en intransitable) | **existe** |
 | G Results Manager | informe: RSS + clase, estado, distancia, energía, segmentos de riesgo, objetivos, recomendaciones | por hacer |
 | H Gamification Manager | puntuación, mejor marca por misión, reintentar | por hacer |
 
-- [ ] E1 · `rss.js` + `terrain.js` + pruebas (normalizaciones, penalizaciones) — 25 min
+**Decisiones de Alan (Trace):**
+- **Astertrail** = equipo · **Marswalk** = app (nombre provisional): renderizador de mapas **por módulos**, cada mapa con sus propios datos, para sumar mapas a futuro (POO cuando se cierre el MVP). **Trace = otro módulo de Marswalk** → carpeta `ui/modules/trace/`.
+- Vehículo: el **LRV** de `sim.js` (consistencia). Hora de salida = la "hora actual" del mapa (el botón la pasa por URL: `?t0=`).
+- Misión **ida y vuelta**. **Batería fundamental** (condición de misión). Ruta inválida (intransitable, batería < reserva, sin volver) → no deja lanzar / "MISIÓN FALLIDA" con la razón.
+- RSS: S = p90 de la pendiente del tramo; intransitable con el máximo; T = peor caso del tramo; rugosidad del DEM 10 m ("escala 10–30 m"); crítico (Pᵢ<25) limita RSS ≤ 49; dato desconocido = riesgo 100.
+- Misión: **Find the Water Signs** (arcillas del monte Sharp). Gamificación local: medallas, mejor marca, comparación de intentos (`localStorage` propio de Trace).
+- Textos en español en un archivo de idioma (`ui/modules/trace/i18n/es.js`) → cambiar de idioma después = otro archivo.
+- Futuro: módulos separados para batería y curvas (sacar de `sim.js`), clases (POO), catálogo de mapas.
+
+- [x] E1 · `rss.js` + `terrain.js` + pruebas (normalizaciones, penalizaciones) — 25 min
 - [ ] E2 · `missions.js` + `trace.html` (planificar, advertencias previas, ejecutar, informe) — 40 min
 - [ ] E3 · botón de acceso en `mapa.html` + gamificación (mejor marca, reintento) — 15 min
 - Nota: la spec recibida se corta en "Módulo G … Identificar segmentos problem" (faltan el resto de G y H).
@@ -84,3 +93,4 @@ Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
 | A3 | DEM real | `scripts/export_dem.py` lee por /vsicurl/ el DEM USGS 1 m (overviews) → `ui/data/dem.js` 711×711 a 10 m (137.32–137.44 E, 4.66–4.78 S), Uint16 0.1 m, 1.35 MB. `ui/dem.js` puro: `elev`, `slope`, `covers`. Elev −4481…−3520 m, pendiente mediana 6.3°. Conectado al panel GEOTOPOLÓGICO (elev/pend. del astronauta y del cursor, desnivel +352/−31 m). | Lectura tardó ~4 min por red (solo una vez). En tu PC: `uv run --with rasterio python scripts/export_dem.py`. |
 | B3 | motor `sim.js` | Puro, 7 pruebas OK (`node ui/sim.test.js`): llano, subida 10°, curva cerrada, Ct, intransitable, frío, momento correcto. Ruta demo real: 3.52 km, 55 min conducción → **71 min con Ct 1.3**, v media 3.9 km/h (real 3.0), 1028 Wh (292 Wh/km), SOC final 88 %, +345 m, θmax 21.9° → GO. `scanDepartures` prueba salidas cada 30 min. | La ruta demo original cruzaba un escarpe real de 31.5° (20 m) → NO-GO: se movió el FIN 110 m (comentado en `mapa.html`, sirve para la demo). Falta GP de sol completo: hoy el pronóstico solo cubre 09–15 h y limita el escaneo de salidas. |
 | B4 | gráficas + plan | GP de **3 sols** (1520–1522, 201–259 K, σ 3.3 K, 1752 min REMS ocultos): `export_gp.py --sol 1520 --ltst 0 --hours 72`. `ui/charts.js` (canvas pixel). TÉRMICO: ruta neutra + pronóstico 3 sols (franja de la travesía, tira GO/PREC/NO-GO por hora de salida cada 15 min, clic = salida) + panel PLAN DE SALIDA (sal/llegas, veredicto, ±15 min, MEJOR SALIDA, energía, batería, peor caso) + EN RUTA AHORA. Perfil (ambas pestañas): elevación, velocidad, batería, tramos >25° en rojo, cursor sincronizado. `sim.js`: elevación suavizada ±10 m. | Mejor salida hoy: sol 1520 14:15 → 15:24, GO, peor caso −21 °C. La ruta original sigue NO-GO (29°). |
+| E1 | RSS + terreno | `ui/modules/trace/`: `terrain.js` (rugosidad = RMS sobre plano 5×5 celdas; calibrada con la región: p50 0.31 m, p95 1.23 m), `rss.js` (S/G/T/A, pesos 35/30/20/15, ponderado por distancia, crítico → RSS ≤ 49, intransitable invalida, desconocido = 100, configurable), `i18n/es.js`. 8 pruebas OK. Ruta demo real: RSS 49 PELIGROSA (tramo 5 crítico: 17.5° p90 + terreno áspero al pie del monte Sharp); ruta con escarpe: inválida. | `sim.js` y el mapa no se tocaron. |
