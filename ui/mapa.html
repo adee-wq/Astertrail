@@ -31,6 +31,8 @@
          box-shadow: 0 0 0 2px var(--ast-navy); transform: translate(-50%, calc(-100% - 14px)); }
   .tag.cold { color: #bfe6ff; box-shadow: 0 0 0 2px #7fb2ff; transform: translate(-50%, 16px); }
   .tag.bad { color: #ffd2c2; box-shadow: 0 0 0 2px #ff3b1f; transform: translate(-50%, 16px); }
+  .tag.tt { font-size: 16px; transform: translate(10px, -50%); }
+  .tdot { width: 8px; height: 8px; background: #041734; box-shadow: 0 0 0 2px #e8f4ff; }
   .cold-dot { width: 12px; height: 12px; background: #7fb2ff; box-shadow: 0 0 0 2px var(--ast-abyss), 0 0 0 4px #7fb2ff; }
   .astro { width: 14px; height: 14px; background: var(--ast-orange); box-shadow: 0 0 0 3px var(--ast-abyss), 0 0 0 5px #e8f4ff; }
   .astro::after { content: ''; position: absolute; inset: -14px; box-shadow: 0 0 0 2px var(--ast-orange);
@@ -314,7 +316,7 @@ let route = load() || CONFIG.rutaDemo.map((p) => p.slice());
 let editing = false, playing = false;
 
 /* ---------- mapa Leaflet (Mars Trek) ---------- */
-const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: 3, maxZoom: 19, zoomControl: false, attributionControl: false });
+const map = L.map('map', { crs: A.crs(L), center: A.CENTER, zoom: A.ZOOM, minZoom: A.MIN_ZOOM, maxBounds: A.BOUNDS, maxBoundsViscosity: 1, maxZoom: 19, zoomControl: false, attributionControl: false });
 L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 const BASES = A.bases(L);
 const baseLayers = { imagen: BASES['IMAGEN · HiRISE/CTX'], relieve: BASES['RELIEVE · MOLA/HRSC'] };
@@ -357,7 +359,18 @@ function drawRoute() {
   routeLayer.clearLayers();
   if (route.length < 2) return;
   L.polyline(route, { color: '#041734', weight: 11, lineJoin: 'round', interactive: false }).addTo(routeLayer);
-  L.polyline(route, { color: view === 'geo' ? '#f26306' : '#e8f4ff', weight: 5, dashArray: view === 'geo' ? '10 6' : null, interactive: false }).addTo(routeLayer);
+  if (view === 'term' && R) {           // TÉRMICO: color = banda de la temperatura (peor caso) cuando el astronauta pasa por ahí
+    const s = R.s, Tk = (p) => p.Tlo ?? p.T;
+    for (let i = 1; i < s.length; i++) { const b = banda(Tk(s[i]) ?? 300);
+      L.polyline([[s[i-1].lat, s[i-1].lon], [s[i].lat, s[i].lon]], { color: b.color, weight: 6, interactive: false }).addTo(routeLayer); }
+    const S = R.summary, step = 15 / 1440;   // etiqueta hora · temperatura cada 15 min de travesía
+    for (let t = S.t0 + step; t < S.t1 - step / 2; t += step) {
+      const p = s.reduce((a, q) => Math.abs(q.t - t) < Math.abs(a.t - t) ? q : a, s[0]);
+      if (Tk(p) == null) continue;
+      L.marker([p.lat, p.lon], { icon: icon('tdot', ''), interactive: false }).addTo(routeLayer);
+      L.marker([p.lat, p.lon], { icon: icon('tag tt', `${hhmm(p.t)} · ${fmtC(Tk(p))}`), interactive: false }).addTo(routeLayer);
+    }
+  } else L.polyline(route, { color: view === 'geo' ? '#f26306' : '#e8f4ff', weight: 5, dashArray: view === 'geo' ? '10 6' : null, interactive: false }).addTo(routeLayer);
   if (R) runs((p) => p.blocked).forEach((seg) => L.polyline(seg.length > 1 ? seg : [seg[0], seg[0]], { color: '#ff3b1f', weight: 9, interactive: false }).addTo(routeLayer));
 }
 function drawPins() {

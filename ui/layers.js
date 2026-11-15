@@ -23,7 +23,7 @@
               label: 'MRO CTX · Gale (Mars Trek)' },
     // Relieve: sombreado en color MOLA + HRSC, ~200 m/px en z8. Global.
     relieve:{ id: 'Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw', ext: 'jpg', maxNative: 8,
-              bounds: [[-89.999, -180], [90, 179.998]],
+              bounds: [[-4.8779, 137.1973], [-4.5703, 137.5488]],   // recortado a la misma zona que IMAGEN
               label: 'MGS MOLA + MEX HRSC, sombreado color (Mars Trek)' },
   };
 
@@ -76,6 +76,8 @@
     LAYERS, OFFLINE, R_MARS, TREK, url, tile, crs, bases, dist,
     // Zona de Curiosity hacia el sol 1520 (Murray Buttes, nov 2016), aprox.
     CENTER: [-4.72, 137.37], ZOOM: 14,
+    // límites de navegación = zona de las teselas offline (no se puede alejar ni arrastrar fuera de la imagen)
+    BOUNDS: [[-4.8779, 137.1973], [-4.5703, 137.5488]], MIN_ZOOM: 12,   // = zona cacheada en ui/tiles (z12)
     CREDITS: 'Imagen: NASA/JPL/UArizona (HiRISE), NASA/JPL/MSSS (CTX), vía NASA Mars Trek · Relieve: MOLA/HRSC',
   };
   if (typeof module !== 'undefined') module.exports = API; else window.AST_LAYERS = API;
