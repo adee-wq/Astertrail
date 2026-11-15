@@ -457,7 +457,7 @@ $('clear').onclick = () => { route = []; routeChanged(); };
 $('fit').onclick = fit;
 // módulo Trace: solo le pasamos la hora actual de salida (lectura); el mapa no depende de él
 $('trace').onclick = () => { location.href = `modules/trace/trace.html?t0=${tDep.toFixed(6)}${A.OFFLINE ? '&offline=1' : ''}`; };
-$('back').onclick = () => history.back();
+$('back').onclick = () => location.href = 'index.html' + (/[?&]offline=1\b/.test(location.search) ? '?offline=1' : '') + '#menu';   // [Marswalk] al menú, sin repetir el viaje
 $('depM').onclick = () => setDep(tDep - CONFIG.pasoSalida / 1440);
 $('depP').onclick = () => setDep(tDep + CONFIG.pasoSalida / 1440);
 $('depBest').onclick = () => { if (scan) setDep(scan.best.t0); };

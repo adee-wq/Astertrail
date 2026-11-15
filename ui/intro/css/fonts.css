@@ -1,0 +1,5 @@
+/* Fuentes de la intro, locales (sin internet). Fuente: Google Fonts, licencia OFL. Solo subconjunto latin (incluye acentos y ñ). */
+@font-face { font-family: 'Press Start 2P'; font-style: normal; font-weight: 400; font-display: swap; src: url('../../fonts/pressstart2p-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Silkscreen'; font-style: normal; font-weight: 400; font-display: swap; src: url('../../fonts/silkscreen-400-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Silkscreen'; font-style: normal; font-weight: 700; font-display: swap; src: url('../../fonts/silkscreen-700-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Pixelify Sans'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../../fonts/pixelifysans-latin.woff2') format('woff2'); }

@@ -73,7 +73,7 @@
     paint();
     let tm; window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(paint, 120); });
   });
-  document.getElementById('back').addEventListener('click', () => history.back());
+  document.getElementById('back').addEventListener('click', () => location.href = 'index.html' + (/[?&]offline=1\b/.test(location.search) ? '?offline=1' : '') + '#menu');   // [Marswalk] al menú, sin repetir el viaje
 </script>
 </body>
 </html>

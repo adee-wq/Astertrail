@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marswalk · Astertrail</title>
+<!-- Intro original del equipo (viaje Tierra → Marte). Fuentes y Three.js locales: funciona sin internet. -->
+<link rel="stylesheet" href="intro/css/fonts.css">
+<link rel="stylesheet" href="intro/css/style.css">
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. Escena 3D (se renderiza a 480x270 y se escala con pixelado) -->
+  <canvas id="space" width="480" height="270"></canvas>
+
+  <!-- 2. Marco de la cabina: se carga desde intro/js/main.js (CONFIG.assets.frame); si falla se usa un marco provisional -->
+  <canvas id="frameFallback" width="480" height="270"></canvas>
+  <img id="frame" alt="">
+
+  <!-- 3. Pantalla de inicio -->
+  <div id="title">
+    <h1 id="gameTitle" aria-label="ASTERTRAIL"></h1>
+    <button class="btn big" id="start">START</button>
+  </div>
+
+  <!-- 4. Panel de misión (consola inferior) -->
+  <div id="panel" class="off">
+    <div class="row"><span class="k">ESTADO</span><b id="pStatus"></b></div>
+    <div id="bar"></div>
+    <div class="row"><span class="k">TIEMPO</span><b id="pHours"></b></div>
+    <div class="row"><span class="k">DISTANCIA</span><b id="pKm"></b></div>
+  </div>
+
+  <!-- [Marswalk] 4b. Menú principal: módulos de la app (aparece al llegar a Marte) -->
+  <div id="menu" class="off">
+    <h1>MARSWALK</h1>
+    <div class="by">POR ASTERTRAIL · CRÁTER GALE</div>
+    <div class="opts">
+      <button class="btn" data-go="mapa.html#termico">MAPA · TÉRMICO<small>Plan de salida con temperatura real (REMS) y física del rover</small></button>
+      <button class="btn" data-go="mapa.html#geo">MAPA · GEOTOPOLÓGICO<small>Terreno real: elevación y pendiente (DEM USGS)</small></button>
+      <button class="btn hot" data-go="modules/trace/trace.html">TRACE YOUR ROUTE!<small>Planifica, evalúa y simula tu expedición</small></button>
+      <button class="btn" data-go="datos.html">DATOS / VALIDACIÓN<small>Pronóstico del GP contra REMS real</small></button>
+    </div>
+  </div>
+  <div id="brief" class="off"></div>
+  <button class="btn off" id="skip">SALTAR VIAJE</button>
+
+  <!-- 5. Botón de sonido (uno solo, dos aspectos) -->
+  <button class="btn icon" id="mute" aria-label="Sonido"></button>
+
+  <div id="toast"></div>
+  <div id="fade"></div>
+</div>
+
+<!-- Three.js r128 (build UMD) local -->
+<script src="vendor/three/three.min.js"></script>
+<script src="intro/js/main.js"></script>
+</body>
+</html>
