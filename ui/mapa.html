@@ -438,7 +438,7 @@ function showPoi(id) {
   else if (!own) onr = `Parada estimada: ${p.stop_min} min. En TRACE es informativa (no cambia la simulación de la misión).`;
   const foto = p.foto
     ? `<img src="${esc(p.foto)}" alt="${esc(p.nombre)}" onerror="this.outerHTML='<div class=&quot;nofoto&quot;>FOTO NO ENCONTRADA<br>${esc(p.foto)}</div>'">`
-    : `<div class="nofoto">FOTO PENDIENTE<br>(sin acceso a mars.nasa.gov al generar los datos)<br>Sugerida: ${esc(p.fotoSugerida || '--')}</div>`;
+    : `<div class="nofoto">FOTO PENDIENTE</div>`;
   $('poiBody').innerHTML = `<h3>${esc(p.nombre)}</h3>
     <div class="row"><span class="k">posición</span><b>${fmtLL(p.lat, p.lon)}</b></div>
     <div class="row"><span class="k">elev. / pendiente</span><b>${fmtE(p.lat, p.lon)}</b></div>
@@ -448,11 +448,11 @@ function showPoi(id) {
     <div class="k">OBJETIVO CIENTÍFICO</div><p class="txt">${esc(p.objetivo)}</p>
     <div class="k">QUÉ MEDIR / MUESTREAR</div><p class="txt">${esc(p.medir)}</p>
     <div class="k">LO QUE VERÁS AL LLEGAR</div>
-    <figure>${foto}<figcaption>${p.foto ? 'Imagen: ' + esc(p.fotoCredito || 'NASA/JPL-Caltech') : ''}</figcaption></figure>
+    <figure>${foto}<figcaption>${p.foto ? esc(p.fotoInfo || '') + ' · Imagen: ' + esc(p.fotoCredito || 'NASA/JPL-Caltech') : ''}</figcaption></figure>
     <div class="note">Fuente: ${esc(p.fuente)}</div>
-    <div class="note">Coordenadas: ${esc(p.precision)}. VERIFICAR.</div>`;
+    <div class="note">Coordenadas: ${esc(p.precision)}.</div>`;
   const add = $('poiAdd'); if (add) { add.onclick = () => poiToRoute(p); if (window.PxButton) PxButton.render(add); }
-  $('poiCard').hidden = false;
+  $('poiCard').hidden = false; topH();
 }
 function hidePoi() { poiOpen = null; $('poiCard').hidden = true; }
 function poiToRoute(p) {                  // inserta el punto en la ruta donde menos distancia añade
@@ -466,7 +466,7 @@ function moveAstro() { if (R) { const q = sampleAt(f); astro.setLatLng([q.lat, q
 function fit() {
   if (route.length < 2) { map.setView(A.CENTER, A.ZOOM); return; }
   const t = document.querySelector('.top'), top = t ? t.offsetTop + t.offsetHeight + 30 : 170;
-  map.fitBounds(L.latLngBounds(route), { paddingTopLeft: [30, top], paddingBottomRight: [30, 130] });
+  map.fitBounds(L.latLngBounds(route.concat(POIS.map((p) => [p.lat, p.lon]))), { paddingTopLeft: [30, top], paddingBottomRight: [200, 130] });   // ruta + paradas científicas
 }
 
 /* ---------- gráficas ---------- */
