@@ -1,0 +1,67 @@
+PDS_VERSION_ID                   = PDS3
+
+/* FILE DATA ELEMENTS */
+RECORD_TYPE                      = FIXED_LENGTH
+RECORD_BYTES                     = 372
+FILE_RECORDS                     = 31459
+
+/* POINTERS TO DATA OBJECTS */
+^REMS_SCIENCE_TABLE = "RME_533182541RMD15290000000_______P2.TAB"
+
+/* IDENTIFICATION DATA ELEMENTS */
+DATA_SET_ID                      = "MSL-M-REMS-5-MODRDR-V1.0"
+DATA_SET_NAME                    = "MSL MARS ROVER ENV MONITORING STATION 5
+                                   MODRDR V1.0"
+
+INSTRUMENT_HOST_ID               = MSL
+INSTRUMENT_HOST_NAME             = "MARS SCIENCE LABORATORY"
+INSTRUMENT_ID                    = REMS
+INSTRUMENT_NAME                  = "ROVER ENVIRONMENTAL MONITORING STATION"
+INSTRUMENT_TYPE                  = ENVIRONMENTAL_STATION
+PLANET_DAY_NUMBER                = 1529
+MISSION_NAME                     = "MARS SCIENCE LABORATORY"
+MISSION_PHASE_NAME               = "EXTENDED SURFACE MISSION"
+OBSERVATION_ID                   = UNK
+
+PRODUCER_INSTITUTION_NAME        = "CENTRO DE ASTROBIOLOGIA"
+PRODUCT_CREATION_TIME            = 2017-06-05T13:13:44.869
+PRODUCT_ID                       = "RME_533182541RMD15290000000_______P2"
+PRODUCT_VERSION_ID               = "V1.0"
+SOURCE_PRODUCT_ID                = {"RME_533182541ESE15290000000ACQ____M7",
+                                   "RME_533182541ESE15290000000ENG____M6",
+                                   "RME_533182541ESE15290000000GTSGAINM6"}
+CALIBRATION_SOURCE_ID            = {"ATS_CAL_20141014.TXT",
+                                   "GTS_CAL_20131018.TXT",
+                                   "HS_CAL_20170522.TXT",
+                                   "PS_CAL_20170522.TXT",
+                                   "UVS_CAL_20120804.TXT",
+                                   "WS_CAL_20140603.TXT"}
+
+RELEASE_ID                       = "0015"
+PRODUCT_TYPE                     = REMS_RDR
+
+SPACECRAFT_CLOCK_START_COUNT     = "533182584"
+SPACECRAFT_CLOCK_STOP_COUNT      = "533267962"
+START_TIME                       = 2016-11-23T14:39:49.856
+STOP_TIME                        = 2016-11-24T14:22:48.661
+TARGET_NAME                      = MARS
+TARGET_TYPE                      = PLANET
+
+/* SOURCE DATA ELEMENTS */
+SOFTWARE_NAME                    = "REMS_QRS"
+SOFTWARE_VERSION_ID              = "3.0.1"
+SPICE_FILE_NAME                  = "chronos.msl"
+
+OBJECT                           = REMS_SCIENCE_TABLE
+  INTERCHANGE_FORMAT             = ASCII
+  ROWS                           = 31459
+  COLUMNS                        = 40
+  ROW_BYTES                      = 372
+  DESCRIPTION                    = "Table with environmental magnitudes after
+                                   applying filters, corrections and models
+                                   to ENV_RDR, thus containing the best
+                                   estimation of the real data."
+  ^STRUCTURE                     = "MODRDR6.FMT"
+END_OBJECT                       = REMS_SCIENCE_TABLE
+
+END

@@ -17,70 +17,89 @@ uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available
 
 Debe imprimir `2.6.0+cu124 True`.
 
+- La PC tiene un filtro que re-firma HTTPS: `rems.py` usa `truststore` (`uv add truststore`) para que Python confíe en los certificados de Windows. No desactivar la verificación TLS.
+
 ## Estructura
 
 ```
-data.py    CSV de REMS -> sol/Ls, partición train/test (NO integrado en train/eval)
-synth.py   generador sintético en torch (batch(B, N, dev, seed))
-model.py   FEFT, encoder MLP, decoder con tiempo de consulta, NLL, predict()
-train.py   bucle enmascarado, AMP bf16, AdamW, checkpoint en runs/varnet/last.pt
-eval.py    baselines (lineal, spline, GP) vs VARnet, RMSE/MAE/cov1/cov2
-demo.py    figura demo.png con 3 paneles (depuración, no es la UI final)
-run.ps1    train -> eval -> demo (ver "Problemas conocidos")
+data.py       CSV de REMS -> sol/Ls, partición train/test
+rems.py       descarga MODRDR del PDS -> data/raw/rems_air.csv (medias por minuto, K)
+synth.py      generador sintético en torch (batch(B, N, dev, seed))
+model.py      FEFT, encoder MLP, decoder con tiempo de consulta, NLL, predict()
+train.py      bucle enmascarado, AMP bf16, AdamW, checkpoint en runs/varnet/last.pt
+eval.py       baselines (lineal, spline, GP) vs VARnet, RMSE/MAE/cov1/cov2 (sintético)
+eval_real.py  misma comparación sobre REMS real + chequeos de contrato + veredicto MVP
+diag_real.py  pruebas de hipótesis H1-H6 sobre por qué VARnet falla en real
+demo.py       figura demo.png con 3 paneles (depuración, no es la UI final)
+run.ps1       train -> eval -> demo (ver "Problemas conocidos")
+ui/           interfaz pixel art (HTML/CSS/JS): px-button.css + px-button.js
 ```
 
-Configuración en diccionarios `CFG` dentro de cada archivo, no en un YAML.
+Configuración en diccionarios `CFG` dentro de cada archivo, no en un YAML. `rems.py`, `eval_real.py` y `diag_real.py` están en el proyecto en `claude/`; van en la raíz junto a los demás.
 
 ## Estado actual
 
-- Checkpoint: `runs/varnet/last.pt`, paso 4300 de 20 000 objetivo. El entrenamiento retoma desde el checkpoint si existe.
-- Entrenamiento (sintético, paso 4200): NLL de validación -1.159, RMSE de validación 0.156 en unidades normalizadas (`asinh` de la escala IQR). No hay sobreajuste visible.
-- Evaluación a 800 pasos (`eval.py`, n=32, huecos 10/20/40%):
-  - GP: RMSE 0.06 a 0.07. cov1 ~0.87, cov2 ~0.90. Más preciso, pero demasiado conservador en σ.
-  - VARnet: RMSE 0.23 a 0.26. cov1 0.61 a 0.69, cov2 0.92 a 0.93. Calibración razonable.
-  - Lineal y spline: RMSE de 0.6 a 4. Ver "Notas" sobre el spline. `cov1` y `cov2` son N/A para estos métodos (no producen σ).
-- Demo: VARnet sigue la periodicidad y su banda ±1σ cubre los puntos ocultos. El GP solo lo hace si los hiperparámetros iniciales son razonables (`periodicity_bounds=(1e-2, 1.)`).
+- Entrenamiento completo: paso 20 000. `train_nll -1.265`, `val_nll -1.269`, `val_rmse 0.138` (normalizado). Sin sobreajuste; meseta probable por `lr` constante.
+- Evaluación sintética a 800 pasos: GP RMSE 0.06-0.07, VARnet 0.23-0.26 (el GP ya era ~4x mejor en sintético).
 
-Lo que aún NO se ha probado: ningún dato real (REMS) pasa por el pipeline. Todas las métricas son sintéticas.
+## Validación con REMS real (hecha, 2026-11-14)
+
+Datos: sols 1500-1559, 31 146 minutos, 194-279 K, ruido dentro del minuto ~0.3 K. 10 ventanas de 10 sols.
+
+`eval_real.py` (criterios provisionales: RMSE <= 6 K, cov1 0.55-0.85, cov2 0.85-0.99, latencia <= 50 ms):
+
+| hueco | VARnet RMSE | GP RMSE | VARnet cov1/cov2 | GP cov1/cov2 |
+|---|---|---|---|---|
+| 10 % (~0.8 sols) | 8.72 K | 3.21 K | 0.53 / 0.84 | 0.64 / 0.91 |
+| 20 % (~2 sols) | 8.37 K | 3.23 K | 0.52 / 0.87 | 0.66 / 0.90 |
+| 40 % (~4 sols) | 10.55 K | 3.90 K | 0.51 / 0.82 | 0.59 / 0.87 |
+
+Contrato de VARnet: todo OK, 2.9 ms por consulta. Veredicto VARnet: NO CUMPLE (RMSE y cov1). Lineal 24-26 K; spline 120-330 K (explota en huecos largos con datos en sesiones; no arreglarlo).
+
+`diag_real.py` (hueco 20 %):
+- **H1** VARnet falla 7.4 K en los puntos que ve y 8.4 K en los ocultos (GP 2.5 / 3.2). No interpola: suaviza.
+- **H2** pendiente pred~obs 0.90 (GP 0.99); sesgo +1.5 K.
+- **H3** RMSE normalizado 0.236 en real = sintético 0.23-0.26. **No hay brecha sim-a-real**: ajustar con REMS o mejorar el sintético no cierra la brecha.
+- **H4** σ × k con k ≈ 1.4 (1.43 / 1.38 entre mitades) lleva cov1/cov2 de 0.52/0.87 a 0.66-0.70/0.97, con validación cruzada. Calibración resuelta.
+- **H5** VARnet 3.9 ms por ventana, GP 1858 ms (~475x).
+- **H6** corrección afín por serie (ajustada en visibles): 8.37 -> 8.06 K, pendiente empeora a 0.83. El error no es amplitud escalada sino forma/fase del ciclo diario (asimétrico). Sin arreglo barato.
+
+**Conclusión:** el límite es la arquitectura (vector global FEFT promediado, el decoder no ve puntos vecinos). La incertidumbre se arregla con σ × 1.4; la precisión no, sin cambiar el modelo.
+
+**Decisión propuesta para el MVP:** `EnvModule` con dos backends: GP (preciso, ~2 s) por defecto y VARnet calibrado (σ × 1.4, ~4 ms) para consultas masivas del planificador. Cambio de arquitectura (atención sobre puntos / decoder local) para después del MVP. Pendiente confirmar umbrales con la sección 15.
 
 ## Problemas conocidos
 
-1. **Cambios de rendimiento pendientes (no aplicados).** Objetivo: subir el uso de la GPU, que estaba muy baja.
-   - `train.py`: `B=256` a `B=512` (o `768` si `nvidia-smi` muestra `GPU-Util` < 50%; `384` si hay OOM).
-   - `train.py`: añadir `torch.backends.cuda.matmul.allow_tf32 = True`.
-   - `train.py`: acumular `run` como tensor (`l.detach()`) y llamar `.item()` solo al loguear. Evita una sincronización por paso.
-   - `synth.py`: en `_dust`, quitar `.item()` de `t.min()` y `t.max()`.
-2. **`run.ps1` no se detiene si Python falla.** `$ErrorActionPreference` no afecta a los comandos nativos, así que imprime "listo" aunque `eval.py` o `demo.py` fallen. Verificar siempre que `demo.png` exista y que la salida no tenga `Traceback`.
-3. **`data.py` no está conectado.** Escribe `data/processed/train.csv` y `test.csv`, pero `train.py` y `eval.py` solo usan `synth.batch`. Falta un cargador de REMS que produzca el mismo formato que `batch` (`x, t, mask, y, sigma`) y un modo de evaluación sobre el test real.
-4. **`data.py` con un CSV de prueba de 20 sols falla.** `test_sols=200` deja el test vacío. Con REMS real no ocurre.
-5. **Formato de CSV esperado:** `sol, ltst, air_temp, air_temp_err, quality`. Se ajusta en `CFG.cols`. Aún no se ha comprobado contra los archivos reales.
-6. **El `lr` es constante (1e-4).** Tras el warm-up no hay decaimiento. Pendiente decidir si hace falta.
-7. **σ del GP demasiado grande**, σ de VARnet correcto. Afecta a la comparación de calibración.
+1. **Cambios de rendimiento pendientes (no aplicados).** `B=256` a `512`; `allow_tf32`; acumular `run` como tensor; quitar `.item()` en `synth._dust`.
+2. **`run.ps1` no se detiene si Python falla.** Verificar que `demo.png` exista y que no haya `Traceback`.
+3. **REMS real solo en evaluación.** `train.py` entrena solo con `synth.batch`.
+4. **`data.py` con un CSV de prueba de 20 sols falla** (`test_sols=200`).
+5. **El `lr` es constante (1e-4).** Candidato: coseno hasta ~1e-6 (no cierra la brecha con el GP, ver H3).
+6. **Criterios MVP provisionales** en `eval_real.CFG['mvp']`; ajustar a la sección 15.
+7. **`ndarray.ptp()` no existe en NumPy 2.** Usar `np.ptp(...)`.
 
 ## Notas sobre el spline
 
-`CubicSpline` oscila fuera de los datos en las ráfagas con ruido y en los huecos largos. `spl()` usa `np.unique` para tiempos repetidos y cae a interpolación lineal donde el spline no está definido. Es un baseline válido: no lo "arregles" para que gane.
+`CubicSpline` oscila fuera de los datos en las ráfagas con ruido y en los huecos largos. Es un baseline válido: no lo "arregles" para que gane.
 
 ## Pendiente de la especificación
 
-- `EnvModule` (sección 15.3) con `predict()` y `predict_batch()`. No existe.
-- Salida JSON del contrato (15.4) con `mu`, `sigma`, `lo95`, `hi95` y `conf` en unidades físicas (K). La desnormalización usa `med` e `iqr` de cada serie.
+- `EnvModule` (sección 15.3) con `predict()` y `predict_batch()`, backends `gp` y `varnet`. No existe.
+- Salida JSON del contrato (15.4) con `mu`, `sigma`, `lo95`, `hi95` y `conf` en K.
 - Exportación a TorchScript u ONNX (15.4).
-- Pruebas de contrato (15.5): forma de salida, unidades, cobertura de intervalos, determinismo.
+- Pruebas de contrato (15.5). `eval_real.contract()` cubre forma, finitud, σ>0, determinismo, unidades y latencia.
 - Fase 2 (6.2 y 15.6): wavelet, CNN, `predict_grid(lat, lon, tq)`.
 
 ## Comandos
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\run.ps1
 uv run python train.py
 uv run python eval.py runs\varnet\last.pt > runs\varnet\eval.json
-uv run python demo.py runs\varnet\last.pt
-nvidia-smi -l 1
+uv run python rems.py --sols 1500 1559
+uv run python eval_real.py runs\varnet\last.pt
+uv run python diag_real.py runs\varnet\last.pt
 ```
-
-Para entrenar desde cero, borrar `runs\varnet\`. Para continuar, dejar el checkpoint.
 
 ## Prompt de arranque para el siguiente modelo
 
-> Lee este README y la especificación. Aplica primero los cambios de rendimiento de "Problemas conocidos" 1 y verifica la formas con `synth.batch`. Después, conecta `data.py` a `train.py` y `eval.py` para que el test sea REMS real, sin cambiar el formato de `batch`. Corrige `run.ps1` para que se detenga ante errores. No cambies la arquitectura (`m=256`, `h=256`) ni la semilla. Antes de modificar un archivo, pide el contenido actual.
+> Lee este README y la especificación (sección 15). La validación con REMS real ya está hecha: VARnet no cumple en precisión por su arquitectura, el GP sí. Implementa `EnvModule` con backends GP y VARnet calibrado (σ × 1.4) según 15.3-15.4. No cambies la arquitectura de VARnet dentro del MVP. Antes de modificar un archivo, pide el contenido actual.

@@ -1,0 +1,129 @@
+{
+ "checkpoint": "runs\\varnet\\last.pt",
+ "n_windows": 10,
+ "sols": [
+  1500.0,
+  1559.0
+ ],
+ "results": {
+  "0.1": {
+   "lin": {
+    "rmse": 25.577174078627777,
+    "mae": 20.962911588945786,
+    "cov1": 0.0,
+    "cov2": 0.0
+   },
+   "spl": {
+    "rmse": 121.95082340964773,
+    "mae": 106.25869557992618,
+    "cov1": 0.0,
+    "cov2": 0.0
+   },
+   "gp": {
+    "rmse": 3.2084072487356634,
+    "mae": 2.5645018706409273,
+    "cov1": 0.6440000000000001,
+    "cov2": 0.9119999999999999
+   },
+   "varnet": {
+    "rmse": 8.722322098630151,
+    "mae": 7.232362805332987,
+    "cov1": 0.53,
+    "cov2": 0.8399999999999999,
+    "cov1_tot": 0.532,
+    "cov2_tot": 0.8399999999999999
+   },
+   "noise_floor_K": 0.3228212593098173,
+   "hole_sols_median": 0.7736143948183098
+  },
+  "0.2": {
+   "lin": {
+    "rmse": 23.596461746514873,
+    "mae": 19.036224424109445,
+    "cov1": 0.0,
+    "cov2": 0.0
+   },
+   "spl": {
+    "rmse": 185.11032699945534,
+    "mae": 156.07540220375398,
+    "cov1": 0.0,
+    "cov2": 0.0
+   },
+   "gp": {
+    "rmse": 3.2305339663636468,
+    "mae": 2.473222675888638,
+    "cov1": 0.6639999999999999,
+    "cov2": 0.9039999999999999
+   },
+   "varnet": {
+    "rmse": 8.370120431207642,
+    "mae": 7.006187606760747,
+    "cov1": 0.516,
+    "cov2": 0.866,
+    "cov1_tot": 0.518,
+    "cov2_tot": 0.868
+   },
+   "noise_floor_K": 0.3017186093202378,
+   "hole_sols_median": 1.9993040162225952
+  },
+  "0.4": {
+   "lin": {
+    "rmse": 24.89463643399196,
+    "mae": 20.27818877285767,
+    "cov1": 0.0,
+    "cov2": 0.0
+   },
+   "spl": {
+    "rmse": 330.4973683991433,
+    "mae": 286.4220080775893,
+    "cov1": 0.0,
+    "cov2": 0.0
+   },
+   "gp": {
+    "rmse": 3.904210818284909,
+    "mae": 2.9858387825621158,
+    "cov1": 0.5940000000000001,
+    "cov2": 0.8714999999999999
+   },
+   "varnet": {
+    "rmse": 10.548289639616067,
+    "mae": 8.591136149435313,
+    "cov1": 0.505,
+    "cov2": 0.8200000000000001,
+    "cov1_tot": 0.506,
+    "cov2_tot": 0.8220000000000001
+   },
+   "noise_floor_K": 0.35590907359045054,
+   "hole_sols_median": 4.089022511885105
+  }
+ },
+ "contract": {
+  "shape_ok": true,
+  "finite": true,
+  "sigma_pos": true,
+  "deterministic": true,
+  "units_K_plausible": true,
+  "latency_ms": 2.8616700030397624
+ },
+ "mvp_checks": {
+  "0.1: VARnet < lineal y spline (RMSE)": true,
+  "0.1: RMSE <= 6.0 K": false,
+  "0.1: cov1_tot en (0.55, 0.85)": false,
+  "0.1: cov2_tot en (0.85, 0.99)": false,
+  "0.2: VARnet < lineal y spline (RMSE)": true,
+  "0.2: RMSE <= 6.0 K": false,
+  "0.2: cov1_tot en (0.55, 0.85)": false,
+  "0.2: cov2_tot en (0.85, 0.99)": true,
+  "0.4: VARnet < lineal y spline (RMSE)": true,
+  "0.4: RMSE <= 6.0 K": false,
+  "0.4: cov1_tot en (0.55, 0.85)": false,
+  "0.4: cov2_tot en (0.85, 0.99)": false,
+  "contrato: shape_ok": true,
+  "contrato: finite": true,
+  "contrato: sigma_pos": true,
+  "contrato: deterministic": true,
+  "contrato: units_K_plausible": true,
+  "contrato: latencia <= 50.0 ms": true
+ },
+ "mvp_pass": false
+}

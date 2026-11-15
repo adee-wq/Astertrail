@@ -3,7 +3,7 @@ import numpy as np
 from model import Interp, norm
 from synth import batch
 
-CFG = dict(seed=0, dev='cuda', B=256, steps=20000, lr=1e-4, wd=3e-6, warm=200,
+CFG = dict(seed=0, dev='cuda', B=768, steps=40000, lr=1e-4, wd=3e-6, warm=200,
            clip=1.0, log_every=50, val_every=200, ckpt_every=200,
            m=256, h=256, out='runs/varnet')
 
