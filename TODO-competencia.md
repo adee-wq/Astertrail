@@ -1,0 +1,56 @@
+# ASTERTRAIL · TODO de competencia v2 (≈4 h 40 → MVP definitivo)
+
+> Archivo para Claude Code. Reloj: inicio 09:50 · **HITO MVP 13:00** · **congelar código 13:30** · entrega 14:30.
+> Regla de oro: **funcionalidad y datos reales primero**. Todo número en pantalla dice de dónde sale (REMS, DEM USGS, Mars Trek) o lleva la etiqueta "ESTIMADO" si es del modelo de energía.
+
+## Protocolo de trabajo
+1. Una iteración a la vez: decir cuál, objetivo y archivos.
+2. Timebox estricto (10–30 min). A mitad de tiempo, si no sale, parar y proponer recorte.
+3. Leer cada archivo entero antes de editarlo. Cambios mínimos.
+4. Al cerrar: diff resumido + comando de prueba + pregunta de checkpoint. Esperar OK de Alan.
+5. Marcar `[x]` y añadir línea a la Bitácora.
+6. No tocar: arquitectura de VARnet, `train.py`, el spline, la verificación TLS (`truststore`).
+7. Sin backend en vivo: la UI lee `ui/data/*.js` + teselas Mars Trek. Abre con doble clic.
+8. Lógica separada de la vista: energía en `ui/sim.js` (puro, probable con `node`).
+9. "RECORTA" → siguiente P0 sin discutir.
+
+## Decisiones ya tomadas (no reabrir)
+- Temperatura: color SOBRE LA RUTA + perfil de la ruta. NO mapa de calor de la zona (REMS es una estación).
+- Imagen: WMTS Mars Trek `https://trek.nasa.gov/tiles/Mars/EQ/{CAPA}/1.0.0/default/default028mm/{z}/{y}/{x}.jpg`.
+- Elevación: DEM MSL Gale Merged 1 m (USGS) `https://planetarymaps.usgs.gov/mosaic/Mars/MSL/MSL_Gale_DEM_Mosaic_1m_v3.tif` (solo ventana). Respaldo HRSC 30 m (Zenodo 5808354) o MOLA.
+- Leaflet en `ui/vendor/` (no CDN). Distancias geodésicas, R Marte 3389.5 km.
+- Menú: `MAPA · TÉRMICO` (activo), `MAPA · GEOTOPOLÓGICO — PRÓXIMAMENTE` (deshabilitado).
+
+## BLOQUE A · Datos reales listos (09:50 – 10:55)
+- [x] A1 · Humo y datos de temperatura — P0 · 10 min
+- [ ] A2 · Mapa base Mars Trek en Leaflet — P0 · 25 min
+- [ ] A3 · Elevación real de la zona — P0 · 30 min ⚠️
+
+## BLOQUE B · Herramienta funcional (10:55 – 13:00) — MVP
+- [ ] B1 · Menú (`ui/index.html`) — P0 · 15 min
+- [ ] B2 · Migrar `mapa.html` a Leaflet con coordenadas reales — P0 · 30 min
+- [ ] B3 · Motor de energía (`ui/sim.js`) — P0 · 30 min
+- [ ] B4 · Perfil de la ruta — P0 · 20 min
+- [ ] B5 · Vista del astronauta + velocidad de simulación — P0 · 20 min
+- [ ] B6 · Veredicto de la misión — P0 · 10 min
+> 🔒 HITO MVP (13:00): copiar `ui/` a `ui_mvp_backup/`.
+
+## BLOQUE C · Convencer (13:00 – 13:30)
+- [ ] C1 · Validación en `datos.html` — P1
+- [ ] C2 · Pulido para proyector — P1
+- [ ] C3 · Extras — P2
+
+## BLOQUE D · Congelar y entregar (13:30 – 14:30)
+- [ ] D1 · Ensayo técnico (Wi-Fi apagado, localStorage limpio)
+- [ ] D2 · Respaldo (capturas, video, zip, LEEME.md)
+- [ ] D3 · Guion de 3 min
+- [ ] D4 · Holgura
+
+## Lista de recortes (en orden)
+1. C3 · 2. `cache_tiles.py` · 3. x300 y alertas de curva · 4. DEM → HRSC 30 m / MOLA · 5. `regen = 0`
+Nunca recortar: A1, A2, B1, B2, B3, B6, D1, D2.
+
+## Bitácora
+| hora | iteración | quedó | recortado / notas |
+|---|---|---|---|
+| A1 | humo + GP | `export_gp.py --sol 1520 --ltst 9 --hours 6` OK (REMS real, 500 pts, 1.2 s, T 234.9–256.0 K, σ media 2.64 K, 197 ocultos). `datos.html` sin errores. Fuente Jersey 10 local en `ui/fonts/`. | Único error de consola: `mapa.jpg` no existe en `mapa.html` (se elimina en B2). El script vive en `scripts/`: correr con `PYTHONPATH=src/model_marte`. |
