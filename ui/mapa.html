@@ -152,6 +152,8 @@
 <script src="data/gp-data.js" defer></script>
 <script src="dem.js"></script>
 <script src="data/dem.js"></script>
+<script src="i18n-en.js"></script>
+<script src="i18n.js"></script>
 <script src="sim.js"></script>
 <script src="data/poi.js"></script>
 <script src="route-opt.js"></script>
@@ -171,7 +173,7 @@
 
   <div class="top">
     <div class="lcol">
-      <button class="px-btn" data-size="sm" data-variant="danger" data-icon="back" id="back" title="Volver al menú">BACK</button>
+      <button class="px-btn" data-size="sm" data-variant="danger" data-icon="back" id="back" title="Volver al menú">ATRÁS</button>
       <label class="op" id="opBox" hidden title="Superpone el relieve MOLA/HRSC sobre la imagen">RELIEVE <input type="range" id="op" min="0" max="100" value="60" aria-label="Opacidad del relieve"></label>
     </div>
     <div id="status" data-modes="term geo" title="Clic en un dato para ver el detalle"></div>
@@ -373,11 +375,19 @@ const hhmm = (t) => {
   const m = Math.round((((t % 1) + 1) % 1) * 24 * 60);
   return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
 };
-const solHh = (t) => `SOL ${Math.floor(t + 1e-9)} · ${hhmm(t)}`;
+const solHh = (t) => I18N.t('SOL {d} · {h}', { d: Math.floor(t + 1e-9), h: hhmm(t) });
+const LOCALE = () => (I18N.isEN ? 'en-US' : 'es');
+// motivos del veredicto (sim.js los escribe en español): se traducen por patrón
+const trWhy = (w) => { let m;
+  if ((m = w.match(/^(\d+) m con pendiente > (\d+)°$/))) return I18N.t('{n} m with slope > {a}°', { n: m[1], a: m[2] });
+  if ((m = w.match(/^reserva (\d+) % < (\d+) %$/))) return I18N.t('battery reserve {a} % < {b} %', { a: m[1], b: m[2] });
+  if ((m = w.match(/^(\d+) min en FRÍO EXTREMO$/))) return I18N.t('{n} min in EXTREME COLD', { n: m[1] });
+  if ((m = w.match(/^reserva justa \((\d+) %\)$/))) return I18N.t('tight reserve ({n} %)', { n: m[1] });
+  return I18N.t(w); };
 const fmtKm = (m) => m < 1000 ? `${m.toFixed(0)} m` : `${(m / 1000).toFixed(2)} km`;
 const fmtMin = (s) => s < 3600 ? `${Math.round(s / 60)} min` : `${Math.floor(s / 3600)} h ${String(Math.round(s % 3600 / 60)).padStart(2, '0')} min`;
 const fmtLL = (lat, lon) => `${Math.abs(lat).toFixed(4)}° ${lat < 0 ? 'S' : 'N'}, ${lon.toFixed(4)}° E`;
-const fmtE = (lat, lon) => { if (!dem) return 'sin DEM'; const e = dem.elev(lat, lon), sl = dem.slope(lat, lon); return e === null ? 'fuera del DEM' : `${e.toFixed(0)} m · ${sl === null ? '--' : sl.toFixed(1) + '°'}`; };
+const fmtE = (lat, lon) => { if (!dem) return I18N.t('sin DEM'); const e = dem.elev(lat, lon), sl = dem.slope(lat, lon); return e === null ? I18N.t('fuera del DEM') : `${e.toFixed(0)} m · ${sl === null ? '--' : sl.toFixed(1) + '°'}`; };
 const banda = (k) => CONFIG.bandas.find((b) => k < b.max);
 const save = (r) => { try { localStorage.setItem(STORE, JSON.stringify(r)); } catch (e) {} };
 const load = () => { try { const r = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(r) && r.length >= 2 && r.every((p) => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1]) && Math.abs(p[0]) <= 90)) return r; } catch (e) {} return null; };
@@ -459,15 +469,15 @@ function drawPins() {
   route.forEach((q, i) => L.marker(q, { icon: icon('wp', editing ? `<span>${i + 1}</span>` : ''), interactive: false }).addTo(pinLayer));
   if (!R) { astro.remove(); return; }
   const S = R.summary, s = R.s;
-  L.marker(route[0], { icon: icon('tag', 'SALIDA ' + hhmm(S.t0)), interactive: false }).addTo(pinLayer);
-  L.marker(route[route.length - 1], { icon: icon('tag', 'LLEGADA ' + hhmm(S.t1)), interactive: false }).addTo(pinLayer);
+  L.marker(route[0], { icon: icon('tag', I18N.t('SALIDA') + ' ' + hhmm(S.t0)), interactive: false }).addTo(pinLayer);
+  L.marker(route[route.length - 1], { icon: icon('tag', I18N.t('LLEGADA') + ' ' + hhmm(S.t1)), interactive: false }).addTo(pinLayer);
   if (view === 'term' && S.Tlo_min != null) {
     const p = s.reduce((a, q) => Math.abs(q.t - S.t_Tlo_min) < Math.abs(a.t - S.t_Tlo_min) ? q : a, s[0]);   // (el mínimo puede caer durante una parada)
     L.marker([p.lat, p.lon], { icon: icon('cold-dot'), interactive: false }).addTo(pinLayer);
-    L.marker([p.lat, p.lon], { icon: icon('tag cold', `MÍN ${hhmm(p.t)} · ${fmtC(S.Tlo_min)}`), interactive: false }).addTo(pinLayer);
+    L.marker([p.lat, p.lon], { icon: icon('tag cold', `${I18N.t('MÍN')} ${hhmm(p.t)} · ${fmtC(S.Tlo_min)}`), interactive: false }).addTo(pinLayer);
   }
   const b = s.find((q) => q.blocked);
-  if (b) L.marker([b.lat, b.lon], { icon: icon('tag bad', `> ${R.vehicle.theta_max}° INTRANSITABLE`), interactive: false }).addTo(pinLayer);
+  if (b) L.marker([b.lat, b.lon], { icon: icon('tag bad', `> ${R.vehicle.theta_max}° ${I18N.t('INTRANSITABLE')}`), interactive: false }).addTo(pinLayer);
   astro.addTo(map); moveAstro();
 }
 /* ---------- paradas científicas: marcadores + ficha ---------- */
@@ -478,7 +488,7 @@ const stopOf = (id) => { const r = simNow(); return r ? r.summary.stops.find((x)
 function drawPoi() {
   poiLayer.clearLayers();
   POIS.forEach((p) => { const st = stopOf(p.id);
-    L.marker([p.lat, p.lon], { icon: icon('poi' + (st ? ' on' : ''), `<i></i><span>${esc(p.corto)}${st ? ` · ${hhmm(st.t_arr)} · ${p.stop_min} min` : ''}</span>`), zIndexOffset: 500, title: p.nombre })
+    L.marker([p.lat, p.lon], { icon: icon('poi' + (st ? ' on' : ''), `<i></i><span>${esc(I18N.t(p.corto))}${st ? ` · ${hhmm(st.t_arr)} · ${p.stop_min} min` : ''}</span>`), zIndexOffset: 500, title: I18N.t(p.nombre) })
       .on('click', () => showPoi(p.id)).addTo(poiLayer); });
   if (poiOpen) showPoi(poiOpen);
 }
@@ -486,25 +496,25 @@ function showPoi(id) {
   const p = POI_DATA.get(id); if (!p) return; poiOpen = id;
   const st = stopOf(id), own = view === 'term' || view === 'geo';
   let onr = '';
-  if (st) onr = `EN TU RUTA (a ${st.off_m.toFixed(0)} m, km ${(st.dist / 1000).toFixed(2)}): llegas ${hhmm(st.t_arr)}, sales ${hhmm(st.t_dep)}. Suma ${p.stop_min} min a la duración.`;
+  if (st) onr = I18N.t('EN TU RUTA (a {m} m, km {k}): llegas {a}, sales {d}. Suma {s} min a la duración.', { m: st.off_m.toFixed(0), k: (st.dist / 1000).toFixed(2), a: hhmm(st.t_arr), d: hhmm(st.t_dep), s: p.stop_min });
   else if (own && R) { const d = Math.min(...R.s.map((q) => SIM.dist([q.lat, q.lon], [p.lat, p.lon])));
-    onr = `A ${fmtKm(d)} de tu ruta: no cuenta como parada (hay que pasar a ≤ ${p.radio} m).`; }
-  else if (!own) onr = `Tu ruta de TRACE no pasa a ≤ ${p.radio} m: no cuenta como parada.`;
+    onr = I18N.t('A {d} de tu ruta: no cuenta como parada (hay que pasar a ≤ {r} m).', { d: fmtKm(d), r: p.radio }); }
+  else if (!own) onr = I18N.t('Tu ruta de TRACE no pasa a ≤ {r} m: no cuenta como parada.', { r: p.radio });
   const foto = p.foto
-    ? `<img src="${esc(p.foto)}" alt="${esc(p.nombre)}" onerror="this.outerHTML='<div class=&quot;nofoto&quot;>FOTO NO ENCONTRADA<br>${esc(p.foto)}</div>'">`
-    : `<div class="nofoto">FOTO PENDIENTE</div>`;
-  $('poiBody').innerHTML = `<h3>${esc(p.nombre)}</h3>
-    <div class="row"><span class="k">posición</span><b>${fmtLL(p.lat, p.lon)}</b></div>
-    <div class="row"><span class="k">elev. / pendiente</span><b>${fmtE(p.lat, p.lon)}</b></div>
-    <div class="row"><span class="k">parada estimada</span><b>${p.stop_min} min (ESTIMADO)</b></div>
+    ? `<img src="${esc(p.foto)}" alt="${esc(p.nombre)}" onerror="this.outerHTML='<div class=&quot;nofoto&quot;>${I18N.t('FOTO NO ENCONTRADA')}<br>${esc(p.foto)}</div>'">`
+    : `<div class="nofoto">${I18N.t('FOTO PENDIENTE')}</div>`;
+  $('poiBody').innerHTML = `<h3>${esc(I18N.t(p.nombre))}</h3>
+    <div class="row"><span class="k">${I18N.t('posición')}</span><b>${fmtLL(p.lat, p.lon)}</b></div>
+    <div class="row"><span class="k">${I18N.t('elev. / pendiente')}</span><b>${fmtE(p.lat, p.lon)}</b></div>
+    <div class="row"><span class="k">${I18N.t('parada estimada')}</span><b>${p.stop_min} min (${I18N.t('ESTIMADO')})</b></div>
     ${onr ? `<div class="onr">${onr}</div>` : ''}
-    ${own && !st ? '<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" data-icon="route" id="poiAdd">PASAR POR AQUÍ</button></div>' : ''}
-    <div class="k">OBJETIVO CIENTÍFICO</div><p class="txt">${esc(p.objetivo)}</p>
-    <div class="k">QUÉ MEDIR / MUESTREAR</div><p class="txt">${esc(p.medir)}</p>
-    <div class="k">LO QUE VERÁS AL LLEGAR</div>
-    <figure>${foto}<figcaption>${p.foto ? esc(p.fotoInfo || '') + ' · Imagen: ' + esc(p.fotoCredito || 'NASA/JPL-Caltech') : ''}</figcaption></figure>
-    <div class="note">Fuente: ${esc(p.fuente)}</div>
-    <div class="note">Coordenadas: ${esc(p.precision)}.</div>`;
+    ${own && !st ? `<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" data-icon="route" id="poiAdd">${I18N.t('PASAR POR AQUÍ')}</button></div>` : ''}
+    <div class="k">${I18N.t('OBJETIVO CIENTÍFICO')}</div><p class="txt">${esc(I18N.t(p.objetivo))}</p>
+    <div class="k">${I18N.t('QUÉ MEDIR / MUESTREAR')}</div><p class="txt">${esc(I18N.t(p.medir))}</p>
+    <div class="k">${I18N.t('LO QUE VERÁS AL LLEGAR')}</div>
+    <figure>${foto}<figcaption>${p.foto ? esc(p.fotoInfo || '') + ' · ' + I18N.t('Imagen:') + ' ' + esc(p.fotoCredito || 'NASA/JPL-Caltech') : ''}</figcaption></figure>
+    <div class="note">${I18N.t('Fuente:')} ${esc(I18N.t(p.fuente))}</div>
+    <div class="note">${I18N.t('Coordenadas:')} ${esc(I18N.t(p.precision))}.</div>`;
   const add = $('poiAdd'); if (add) { add.onclick = () => poiToRoute(p); if (window.PxButton) PxButton.render(add); }
   $('poiCard').hidden = false; topH();
   const c = $('poiCard'), x = map.latLngToContainerPoint([p.lat, p.lon]).x, edge = c.offsetLeft + c.offsetWidth + 40;
@@ -535,13 +545,13 @@ function drawCharts() {
     const pxSol = ($('cTemp').clientWidth - 110) / (b - a), ticks = [];   // rótulos según el espacio disponible
     for (let t = Math.ceil(a * 4) / 4; t <= b + 1e-9; t += 0.25) {
       const mid = Math.abs(t % 1) < 1e-6, noon = Math.abs((t % 1) - 0.5) < 1e-6;
-      ticks.push({ v: t, label: mid ? (pxSol > 130 ? `SOL ${Math.round(t)}` : `${Math.round(t)}`) : (noon && pxSol > 260 ? '12:00' : '') });
+      ticks.push({ v: t, label: mid ? (pxSol > 130 ? `${I18N.t('SOL')} ${Math.round(t)}` : `${Math.round(t)}`) : (noon && pxSol > 260 ? '12:00' : '') });
     }
     const hid = D.hidden || { t: [], x: [] };
     const strips = scan ? scan.all.map((x) => ({ a: x.t0, b: x.t0 + scan.step, color: VERD[x.v.level] })) : [];
     chT = AstChart.draw($('cTemp'), { x0: a, x1: b, xTicks: ticks, cursor: cur && cur.t,
       spans: R ? [{ a: R.summary.t0, b: R.summary.t1, color: 'rgba(242,99,6,.35)' }] : [],
-      panes: [{ left: { min: ymin, max: ymax, label: 'T AIRE (K)', n: 3 },
+      panes: [{ left: { min: ymin, max: ymax, label: I18N.t('T AIRE (K)'), n: 3 },
         areas: [{ xs: P.t, lo, hi, color: 'rgba(81,180,245,.25)' }],
         hlines: CONFIG.bandas.filter((x) => x.max < 1e9 && x.max > ymin && x.max < ymax).map((x) => ({ y: x.max, color: x.color })),
         dots: [{ xs: hid.t.filter((_, i) => i % 3 === 0), ys: hid.x.filter((_, i) => i % 3 === 0), color: '#f26306', size: 2 }],
@@ -554,13 +564,13 @@ function drawCharts() {
   const blk = []; let st = null;
   s.forEach((p, i) => { if (p.blocked && st == null) st = p.dist; if ((!p.blocked || i === s.length - 1) && st != null) { blk.push({ a: st / 1000, b: p.dist / 1000, color: 'rgba(255,59,31,.55)' }); st = null; } });
   R.summary.stops.forEach((x) => blk.push({ a: x.dist / 1000 - L0 * 0.003, b: x.dist / 1000 + L0 * 0.003, color: 'rgba(255,210,63,.85)' }));   // paradas científicas
-  const xt = AstChart.niceTicks(0, L0, 5).map((v) => ({ v, label: v + ' km' }));
+  const xt = AstChart.niceTicks(0, L0, 5).map((v) => ({ v, label: v + ' ' + I18N.t('km') }));
   chP = AstChart.draw($('cProf'), { x0: 0, x1: L0, xTicks: xt, cursor: cur && cur.dist / 1000, spans: blk,
     panes: [
-      { h: 0.55, left: { min: emin, max: emax, label: 'ELEVACIÓN (KM)', n: 2, fmt: (v) => (v / 1000).toFixed(1) }, areas: [{ xs: km, ys: el, color: 'rgba(34,118,192,.75)' }],
+      { h: 0.55, left: { min: emin, max: emax, label: I18N.t('ELEVACIÓN (KM)'), n: 2, fmt: (v) => (v / 1000).toFixed(1) }, areas: [{ xs: km, ys: el, color: 'rgba(34,118,192,.75)' }],
         lines: [{ xs: km, ys: el, color: '#51b4f5', width: 2 }] },
-      { h: 0.45, left: { min: 0, max: 10, label: 'V (KM/H)', color: '#bfe6ff', ticks: [0, 5, 10] },
-        right: { min: 0, max: 100, label: 'BATERÍA %', color: '#f26306', ticks: [0, 50, 100] },
+      { h: 0.45, left: { min: 0, max: 10, label: I18N.t('V (KM/H)'), color: '#bfe6ff', ticks: [0, 5, 10] },
+        right: { min: 0, max: 100, label: I18N.t('BATERÍA %'), color: '#f26306', ticks: [0, 50, 100] },
         hlines: [{ axis: 'right', y: R.vehicle.soc_min * 100, color: '#a10a04' }],
         lines: [{ xs: km, ys: ss.map((p) => p.v * 3.6), color: '#bfe6ff', width: 2 },
                 { axis: 'right', xs: km, ys: ss.map((p) => p.SOC * 100), color: '#f26306', width: 2 }] },
@@ -570,53 +580,53 @@ function drawCharts() {
 /* ---------- paneles ---------- */
 function plan() {
   if (!R) { ['pRec', 'pDist', 'pDur', 'pV', 'pE', 'pSoc', 'pTmin', 'pUp', 'pRad'].forEach((id) => { $(id).textContent = '--'; }); $('pStops').textContent = '--';
-    $('pState').textContent = 'TRAZA UNA RUTA'; $('pState').style.background = '#9fc8ea'; $('pWhy').textContent = ''; return; }
+    $('pState').textContent = I18N.t('TRAZA UNA RUTA'); $('pState').style.background = '#9fc8ea'; $('pWhy').textContent = ''; return; }
   const S = R.summary;
-  $('pRec').innerHTML = `SAL <b>${solHh(S.t0)}</b><br>LLEGAS <b>${solHh(S.t1)}</b>`;
-  $('pState').textContent = V.level; $('pState').style.background = VERD[V.level];
-  $('pWhy').textContent = V.why.join(' · ');
+  $('pRec').innerHTML = `${I18N.t('SAL')} <b>${solHh(S.t0)}</b><br>${I18N.t('LLEGAS')} <b>${solHh(S.t1)}</b>`;
+  $('pState').textContent = I18N.t(V.level); $('pState').style.background = VERD[V.level];
+  $('pWhy').textContent = V.why.map(trWhy).join(' · ');
   $('pDist').textContent = fmtKm(S.dist_m);
-  $('pDur').textContent = `${fmtMin(S.dur_s)}  (${fmtMin(S.drive_s)} × Ct ${S.Ct}${S.stop_s ? ' + ' + fmtMin(S.stop_s) + ' paradas' : ''})`;
-  $('pStops').textContent = S.stops.length ? `${S.stops.length} · ${fmtMin(S.stop_s)}` : 'ninguna en ruta';
-  $('pV').textContent = `${S.v_media_kmh.toFixed(1)} km/h · real ${S.v_media_real_kmh.toFixed(1)}`;
+  $('pDur').textContent = `${fmtMin(S.dur_s)}  (${fmtMin(S.drive_s)} × Ct ${S.Ct}${S.stop_s ? ' + ' + fmtMin(S.stop_s) + ' ' + I18N.t('paradas') : ''})`;
+  $('pStops').textContent = S.stops.length ? `${S.stops.length} · ${fmtMin(S.stop_s)}` : I18N.t('ninguna en ruta');
+  $('pV').textContent = `${S.v_media_kmh.toFixed(1)} km/h · ${I18N.t('real')} ${S.v_media_real_kmh.toFixed(1)}`;
   $('pE').textContent = `${S.E_Wh.toFixed(0)} Wh · ${S.Wh_km.toFixed(0)} Wh/km`;
   $('pSoc').textContent = `${(S.SOC_end * 100).toFixed(0)} %`;
-  $('pTmin').textContent = S.Tlo_min == null ? 'fuera de pronóstico' : `${fmtC(S.Tlo_min)} a las ${hhmm(S.t_Tlo_min)}`;
+  $('pTmin').textContent = S.Tlo_min == null ? I18N.t('fuera de pronóstico') : I18N.t('{c} a las {h}', { c: fmtC(S.Tlo_min), h: hhmm(S.t_Tlo_min) });
   $('pUp').textContent = `+${S.desnivel_up.toFixed(0)} m / −${S.desnivel_dn.toFixed(0)} m`;
   $('pRad').textContent = `${(S.dose_mSv * 1000).toFixed(0)} µSv`;
-  $('pRadSrc').textContent = `Radiación: ${SIM.DOSIS_mSv_DIA} mSv/día × duración (RAD de Curiosity en Gale; Hassler et al. 2014, Science 343). Límite de carrera NASA: ${SIM.LIMITE_CARRERA_mSv} mSv (NASA-STD-3001) → esta salida usa ${(S.dose_mSv / SIM.LIMITE_CARRERA_mSv * 100).toFixed(4)} %, ≈ ${Math.floor(SIM.LIMITE_CARRERA_mSv / S.dose_mSv).toLocaleString('es')} salidas iguales.`;
-  $('pMeta').textContent = `${CONFIG.lugar} · salida cada ${CONFIG.pasoSalida} min`;
+  $('pRadSrc').textContent = I18N.t('Radiación: {r} mSv/día × duración (RAD de Curiosity en Gale; Hassler et al. 2014, Science 343). Límite de carrera NASA: {l} mSv (NASA-STD-3001) → esta salida usa {p} %, ≈ {n} salidas iguales.', { r: SIM.DOSIS_mSv_DIA, l: SIM.LIMITE_CARRERA_mSv, p: (S.dose_mSv / SIM.LIMITE_CARRERA_mSv * 100).toFixed(4), n: Math.floor(SIM.LIMITE_CARRERA_mSv / S.dose_mSv).toLocaleString(LOCALE()) });
+  $('pMeta').textContent = `${I18N.t(CONFIG.lugar)} · ${I18N.t('salida cada {m} min', { m: CONFIG.pasoSalida })}`;
   if (scan) { const B = scan.best;
-    $('pBest').innerHTML = `Mejor salida del pronóstico: <b style="color:${VERD[B.v.level]}">${solHh(B.t0)}</b> (${B.v.level}, peor caso ${B.r.summary.Tlo_min == null ? '--' : fmtC(B.r.summary.Tlo_min)}). Criterio: viable, la más templada; empate → menos energía.`; }
-  $('pVeh').textContent = `Vehículo: ${R.vehicle.nombre} · ${R.vehicle.m} kg · ${R.vehicle.P_max} W · ${(R.vehicle.E_bat / 1000).toFixed(1)} kWh · REFERENCIA, VERIFICAR`;
+    $('pBest').innerHTML = I18N.t('Mejor salida del pronóstico: {b} ({l}, peor caso {w}). Criterio: viable, la más templada; empate → menos energía.', { b: `<b style="color:${VERD[B.v.level]}">${solHh(B.t0)}</b>`, l: I18N.t(B.v.level), w: B.r.summary.Tlo_min == null ? '--' : fmtC(B.r.summary.Tlo_min) }); }
+  $('pVeh').textContent = `${I18N.t('Vehículo:')} ${I18N.t(R.vehicle.nombre)} · ${R.vehicle.m} kg · ${R.vehicle.P_max} W · ${(R.vehicle.E_bat / 1000).toFixed(1)} kWh · ${I18N.t('REFERENCIA, VERIFICAR')}`;
   const g = R.s;
   $('gThMax').textContent = `${S.theta_max_ruta.toFixed(1)}°`;
-  $('gBlk').textContent = S.blocked_m > 0 ? `${S.blocked_m.toFixed(0)} m (> ${R.vehicle.theta_max}°)` : 'ninguno';
+  $('gBlk').textContent = S.blocked_m > 0 ? `${S.blocked_m.toFixed(0)} m (> ${R.vehicle.theta_max}°)` : I18N.t('ninguno');
   $('gUp').textContent = $('pUp').textContent;
   $('gLen').textContent = fmtKm(S.dist_m);
 }
 function update() {
   $('gWp').textContent = route.length;
-  $('gSrc').textContent = dem ? `Elevación y pendiente: ${dem.meta.source}, a ${dem.meta.res_m} m.` : 'Sin DEM: corre scripts/export_dem.py';
+  $('gSrc').textContent = dem ? I18N.t('Elevación y pendiente: {src}, a {m} m.', { src: dem.meta.source, m: dem.meta.res_m }) : I18N.t('Sin DEM: corre scripts/export_dem.py');
   if (!R) { $('clock').textContent = '--:--'; drawCharts(); return; }
   const q = sampleAt(f), b = q.Tlo != null ? banda(q.Tlo) : null;
   $('clock').textContent = solHh(q.t);
-  $('where').textContent = `${CONFIG.lugar} · ${hhmm(q.t)} LTST`;
+  $('where').textContent = `${I18N.t(CONFIG.lugar)} · ${hhmm(q.t)} LTST`;
   $('tC').textContent = q.T != null ? fmtC(q.T) : '--';
-  $('tK').textContent = q.T != null ? `${q.T.toFixed(1)} K` : 'fuera de pronóstico';
+  $('tK').textContent = q.T != null ? `${q.T.toFixed(1)} K` : I18N.t('fuera de pronóstico');
   $('worst').textContent = q.Tlo != null ? `${fmtC(q.Tlo)}  (${q.Tlo.toFixed(0)} K)` : '--';
-  $('conf').textContent = q.sd == null ? '--' : q.sd < 2 ? `ALTA ±${q.sd.toFixed(1)} K` : q.sd < 5 ? `MEDIA ±${q.sd.toFixed(1)} K` : `BAJA ±${q.sd.toFixed(1)} K`;
-  $('rV').textContent = `${(q.v * 3.6).toFixed(1)} km/h · ${q.lim}`;
+  $('conf').textContent = q.sd == null ? '--' : `${q.sd < 2 ? I18N.t('ALTA') : q.sd < 5 ? I18N.t('MEDIA') : I18N.t('BAJA')} ±${q.sd.toFixed(1)} K`;
+  $('rV').textContent = `${(q.v * 3.6).toFixed(1)} km/h · ${I18N.t(q.lim)}`;
   $('rTh').textContent = `${(q.theta * 180 / Math.PI).toFixed(1)}°`;
   $('rP').textContent = `${q.P.toFixed(0)} W`;
   $('rSoc').textContent = `${(q.SOC * 100).toFixed(1)} %`;
-  $('dist').textContent = `${fmtKm(q.dist)} de ${fmtKm(R.summary.dist_m)}`;
+  $('dist').textContent = `${fmtKm(q.dist)} ${I18N.t('de')} ${fmtKm(R.summary.dist_m)}`;
   radPanel(q);
-  $('state').textContent = b ? b.nombre : '--'; $('state').style.background = b ? b.color : '#9fc8ea';
-  $('advice').textContent = b ? b.consejo : '';
+  $('state').textContent = b ? I18N.t(b.nombre) : '--'; $('state').style.background = b ? b.color : '#9fc8ea';
+  $('advice').textContent = b ? I18N.t(b.consejo) : '';
   $('gPos').textContent = fmtLL(q.lat, q.lon); $('gDist').textContent = fmtKm(q.dist);
   $('gEl').textContent = `${q.elev.toFixed(0)} m`; $('gSl').textContent = `${(q.theta * 180 / Math.PI).toFixed(1)}°`;
-  $('gWhere').textContent = `${CONFIG.lugar} · ${hhmm(q.t)} LTST`;
+  $('gWhere').textContent = `${I18N.t(CONFIG.lugar)} · ${hhmm(q.t)} LTST`;
   moveAstro(); drawCharts();
 }
 /* ---------- radiación (dosis equivalente; tasa media de RAD, sim.js) ---------- */
@@ -628,19 +638,19 @@ function radPanel(q) {
   const now = rate * Math.max(0, (q.t - S.t0) * SOL_S), tot = S.dose_mSv, stop = rate * (S.stop_s || 0);
   $('rRad').textContent = fmtDose(now);
   $('radNow').textContent = fmtDose(now);
-  $('radNowK').textContent = `acumulada a las ${hhmm(q.t)} de ${fmtDose(tot)} en toda la salida (usa PLAY o la barra de tiempo)`;
+  $('radNowK').textContent = I18N.t('acumulada a las {h} de {d} en toda la salida (usa PLAY o la barra de tiempo)', { h: hhmm(q.t), d: fmtDose(tot) });
   $('radBar').style.width = (tot > 0 ? clamp(now / tot, 0, 1) * 100 : 0) + '%';
-  $('radTot').textContent = `${fmtDose(tot)} en ${fmtMin(S.dur_s)}`;
+  $('radTot').textContent = `${fmtDose(tot)} ${I18N.t('en')} ${fmtMin(S.dur_s)}`;
   $('radDrive').textContent = fmtDose(tot - stop);
-  $('radStop').textContent = S.stop_s ? `${fmtDose(stop)} (${fmtMin(S.stop_s)})` : 'sin paradas';
-  $('radRate').textContent = `${(SIM.DOSIS_mSv_DIA * 1000 / 24).toFixed(0)} µSv/h · ${SIM.DOSIS_mSv_DIA} mSv/día`;
+  $('radStop').textContent = S.stop_s ? `${fmtDose(stop)} (${fmtMin(S.stop_s)})` : I18N.t('sin paradas');
+  $('radRate').textContent = `${(SIM.DOSIS_mSv_DIA * 1000 / 24).toFixed(0)} µSv/h · ${SIM.DOSIS_mSv_DIA} mSv/${I18N.t('día')}`;
   $('radXr').textContent = (tot / XRAY_mSv).toFixed(2);
-  $('radEarth').textContent = `${(tot / EARTH_mSv_DIA).toFixed(1)} días`;
-  $('radCar').textContent = `${(tot / SIM.LIMITE_CARRERA_mSv * 100).toFixed(3)} % de ${SIM.LIMITE_CARRERA_mSv} mSv`;
-  $('radN').textContent = `≈ ${Math.floor(SIM.LIMITE_CARRERA_mSv / tot).toLocaleString('es')}`;
-  $('radAdv').textContent = `Fuera del hábitat el único escudo es la atmósfera (~20 g/cm²). Cada 10 min fuera suman ${fmtDose(rate * 600)}: ` +
-    `${S.stop_s ? 'las paradas científicas son ' + Math.round(S.stop_s / S.dur_s * 100) + ' % de esta dosis. ' : ''}La dosis de una salida es pequeña; ` +
-    `lo que pesa es la suma de toda la misión. Ante un aviso de evento de partículas solares (SPE): volver al hábitat.`;
+  $('radEarth').textContent = `${(tot / EARTH_mSv_DIA).toFixed(1)} ${I18N.t('días')}`;
+  $('radCar').textContent = `${(tot / SIM.LIMITE_CARRERA_mSv * 100).toFixed(3)} % ${I18N.t('de')} ${SIM.LIMITE_CARRERA_mSv} mSv`;
+  $('radN').textContent = `≈ ${Math.floor(SIM.LIMITE_CARRERA_mSv / tot).toLocaleString(LOCALE())}`;
+  $('radAdv').textContent = I18N.t('Fuera del hábitat el único escudo es la atmósfera (~20 g/cm²). Cada 10 min fuera suman {d}: ', { d: fmtDose(rate * 600) }) +
+    (S.stop_s ? I18N.t('las paradas científicas son {p} % de esta dosis. ', { p: Math.round(S.stop_s / S.dur_s * 100) }) : '') + I18N.t('La dosis de una salida es pequeña; ') +
+    I18N.t('lo que pesa es la suma de toda la misión. Ante un aviso de evento de partículas solares (SPE): volver al hábitat.');
 }
 function redraw() { resim(); drawRoute(); drawPins(); drawPoi(); plan(); update(); statusStrip(); }
 function routeChanged() { save(route); rescan(); redraw(); }
@@ -656,7 +666,7 @@ $('cProf').addEventListener('mousemove', (e) => { const x = chP && chP.xAt(e.cli
   const d = x * 1000, s = R.s; let i = 0; while (i < s.length - 1 && s[i].dist < d) i++;
   f = (s[i].t - R.summary.t0) / (R.summary.t1 - R.summary.t0 || 1); $('time').value = Math.round(f * 1000); update(); });
 
-function relabel(btn, txt) { btn.dataset.label = txt; btn.textContent = txt; PxButton.render(btn); }
+function relabel(btn, txt) { btn.dataset.label = I18N.t(txt); btn.textContent = txt; PxButton.render(btn); }
 $('edit').onclick = () => {
   editing = !editing; $('map').classList.toggle('edit', editing);
   $('edit').dataset.variant = editing ? 'on' : 'tool'; $('edit').dataset.icon = editing ? 'star' : 'pencil';
@@ -671,7 +681,7 @@ $('fit').onclick = fit;
 $('poiClose').onclick = hidePoi;
 // módulo Trace: solo le pasamos la hora actual de salida (lectura); el mapa no depende de él
 
-$('back').onclick = () => location.href = 'index.html' + (/[?&]offline=1\b/.test(location.search) ? '?offline=1' : '') + '#menu';   // [Marswalk] al menú, sin repetir el viaje
+$('back').onclick = () => location.href = I18N.withLang('index.html' + (/[?&]offline=1\b/.test(location.search) ? '?offline=1' : '') + '#menu');   // [Marswalk] al menú, sin repetir el viaje
 $('depM').onclick = () => setDep(tDep - CONFIG.pasoSalida / 1440);
 $('depP').onclick = () => setDep(tDep + CONFIG.pasoSalida / 1440);
 $('depBest').onclick = () => { if (scan) setDep(scan.best.t0); };
@@ -728,7 +738,7 @@ const SECS = { term: [['plan', 'PLAN', 'plan'], ['now', 'EN RUTA', 'astro'], ['p
 const ASIDE_SECS = ['plan', 'now', 'geo', 'rad', 'help'];
 let sec = null;
 function buildSecs(v) {
-  $('secs').innerHTML = (SECS[v] || []).map(([k, t, ic]) => `<button class="px-btn" data-size="xs" data-icon="${ic}" data-sec-btn="${k}" title="Abrir/cerrar ${t}">${t}</button>`).join('');
+  $('secs').innerHTML = (SECS[v] || []).map(([k, t, ic]) => `<button class="px-btn" data-size="xs" data-icon="${ic}" data-sec-btn="${k}" title="${I18N.t('Abrir/cerrar {t}', { t: I18N.t(t) })}">${I18N.t(t)}</button>`).join('');
   $('secs').querySelectorAll('[data-sec-btn]').forEach((b) => { b.onclick = () => setSec(sec === b.dataset.secBtn ? null : b.dataset.secBtn); PxButton.render(b); });
   if (!(SECS[v] || []).some(([k]) => k === sec)) sec = null;
   setSec(sec);
@@ -751,11 +761,11 @@ function statusStrip() {
   if (!R) { el.innerHTML = '<span class="chip">TRAZA UNA RUTA: EDITAR RUTA → clic en el mapa</span>'; return; }
   const S = R.summary;
   el.innerHTML = view === 'geo'
-    ? `<span class="chip" data-go="geo"><em>ruta</em> ${fmtKm(S.dist_m)}</span><span class="chip" data-go="perf"><em>desnivel</em> +${S.desnivel_up.toFixed(0)} / −${S.desnivel_dn.toFixed(0)} m</span>` +
-      `<span class="chip" data-go="perf"><em>pend. máx</em> ${S.theta_max_ruta.toFixed(1)}°</span><span class="chip v" data-go="geo" style="background:${S.blocked_m > 0 ? '#ff3b1f' : '#4fd27a'}">${S.blocked_m > 0 ? 'TRAMO INTRANSITABLE' : 'TRANSITABLE'}</span>`
-    : `<span class="chip" data-go="plan"><em>sal</em> ${hhmm(S.t0)} <em>→ llegas</em> ${hhmm(S.t1)}</span><span class="chip v" data-go="plan" style="background:${VERD[V.level]}">${V.level}</span>` +
-      `<span class="chip" data-go="perf"><em>batería</em> ${(S.SOC_end * 100).toFixed(0)} %</span><span class="chip" data-go="pron"><em>peor caso</em> ${S.Tlo_min == null ? '--' : fmtC(S.Tlo_min)}</span>` +
-      `<span class="chip" data-go="rad"><em>☢ radiación</em> ${(S.dose_mSv * 1000).toFixed(0)} µSv</span>`;
+    ? `<span class="chip" data-go="geo"><em>${I18N.t('ruta')}</em> ${fmtKm(S.dist_m)}</span><span class="chip" data-go="perf"><em>${I18N.t('desnivel')}</em> +${S.desnivel_up.toFixed(0)} / −${S.desnivel_dn.toFixed(0)} m</span>` +
+      `<span class="chip" data-go="perf"><em>${I18N.t('pend. máx')}</em> ${S.theta_max_ruta.toFixed(1)}°</span><span class="chip v" data-go="geo" style="background:${S.blocked_m > 0 ? '#ff3b1f' : '#4fd27a'}">${I18N.t(S.blocked_m > 0 ? 'TRAMO INTRANSITABLE' : 'TRANSITABLE')}</span>`
+    : `<span class="chip" data-go="plan"><em>${I18N.t('sal')}</em> ${hhmm(S.t0)} <em>→ ${I18N.t('llegas')}</em> ${hhmm(S.t1)}</span><span class="chip v" data-go="plan" style="background:${VERD[V.level]}">${I18N.t(V.level)}</span>` +
+      `<span class="chip" data-go="perf"><em>${I18N.t('batería')}</em> ${(S.SOC_end * 100).toFixed(0)} %</span><span class="chip" data-go="pron"><em>${I18N.t('peor caso')}</em> ${S.Tlo_min == null ? '--' : fmtC(S.Tlo_min)}</span>` +
+      `<span class="chip" data-go="rad"><em>☢ ${I18N.t('radiación')}</em> ${(S.dose_mSv * 1000).toFixed(0)} µSv</span>`;
 }
 function setView(v) {
   if (active && active !== v && MODULES[active]) { try { MODULES[active].deactivate(); } catch (e) { (window.MW_REPORT || console.error)('salir de ' + active, e); } }
@@ -788,7 +798,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   D = window.GP_DATA;
   if (!D) { try { D = await (await fetch('data/gp.json')).json(); } catch (e) {} }
   if (!D || !D.pred || !D.pred.t || !D.pred.t.length) { D = demoData(); $('demo').hidden = false; }
-  $('credits').textContent = A.CREDITS + ' · Elevación: USGS Astrogeology (DEM MSL Gale 1 m) · Temperatura: MSL REMS (NASA/JPL-Caltech, CAB)' + (A.OFFLINE ? ' · teselas offline' : '');
+  $('credits').textContent = I18N.t(A.CREDITS) + I18N.t(' · Elevación: USGS Astrogeology (DEM MSL Gale 1 m) · Temperatura: MSL REMS (NASA/JPL-Caltech, CAB)') + (A.OFFLINE ? ' · ' + I18N.t('teselas offline') : '');
   tDep = forecast()[0] + CONFIG.salidaInicial / 24;
   const step = (n, fn) => { try { fn(); } catch (e) { (window.MW_REPORT || console.error)(n, e); } };   // un paso que falle no detiene los demás
   step('escaneo', rescan); step('simulación', resim); step('encuadre', fit); step('paradas', drawPoi);

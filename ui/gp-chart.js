@@ -72,7 +72,7 @@
       g.strokeStyle = C.grid; g.beginPath(); g.moveTo(pad.l, y); g.lineTo(pad.l + iw, y); g.stroke();
       pxText(g, (Math.round(v * 10) / 10) + '', pad.l - 10, y, C.text, 'right');
     }
-    pxText(g, 'T AIRE (K)', pad.l - 60, pad.t - 18, C.text, 'left', S);
+    pxText(g, (window.I18N ? I18N.t('T AIRE (K)') : 'T AIRE (K)'), pad.l - 60, pad.t - 18, C.text, 'left', S);
 
     // eje x: horas LTST según la duración
     const hours = (x1 - x0) * 24;
@@ -86,7 +86,7 @@
       const lx = al === 'left' ? pad.l : al === 'right' ? pad.l + iw : x;
       pxText(g, hhmm(t), lx, pad.t + ih + 18, C.text, al);
       if (Math.abs(t - Math.round(t)) < 1e-6 || hh === firstH)
-        pxText(g, 'SOL ' + Math.floor(t + 1e-6), lx, pad.t + ih + 40, C.line, al);
+        pxText(g, (window.I18N ? I18N.t('SOL') : 'SOL') + ' ' + Math.floor(t + 1e-6), lx, pad.t + ih + 40, C.line, al);
     }
     // marco del área de datos
     g.strokeStyle = C.axis; g.lineWidth = 2;

@@ -26,7 +26,9 @@
   };
   const API = {
     dict: ES,
-    t(k, vars) { let s = (API.dict[k] ?? k); for (const v in (vars || {})) s = s.split('{' + v + '}').join(vars[v]); return s; },
+    // el texto español es la clave del idioma: I18N traduce al inglés si está disponible
+    t(k, vars) { const src = API.dict[k] ?? k; if (typeof I18N !== 'undefined') return I18N.t(src, vars);
+      let s = src; for (const v in (vars || {})) s = s.split('{' + v + '}').join(vars[v]); return s; },
   };
   if (typeof module !== 'undefined') module.exports = API; else window.TraceI18n = API;
 })();

@@ -61,6 +61,7 @@
           <p class="note">Vehículo de referencia: Apollo LRV (REFERENCIA, VERIFICAR). Energía: ESTIMADO.</p>
         </section></aside>`;
       document.body.appendChild(this.root);
+      if (window.I18N) I18N.apply(this.root);
       const draw = () => { const r = GPChart.draw(this.root.querySelector('#dm-chart'), gp, { height: Math.max(300, Math.min(560, innerHeight - 260)) }); };
       draw(); this.onResize = () => { clearTimeout(this._t); this._t = setTimeout(draw, 120); }; addEventListener('resize', this.onResize);
       if (window.PxButton) PxButton.renderAll(this.root);

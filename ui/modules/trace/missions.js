@@ -8,6 +8,7 @@
  */
 (function () {
   const RAD = Math.PI / 180;
+  const TX = (src, v) => (typeof I18N !== 'undefined' ? I18N.t(src, v) : src);   // texto visible en el idioma elegido
   const dist = (a, b) => {
     const dLat = (b[0] - a[0]) * RAD, dLon = (b[1] - a[1]) * RAD;
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * RAD) * Math.cos(b[0] * RAD) * Math.sin(dLon / 2) ** 2;
@@ -33,14 +34,14 @@
     const has = route.length >= 2 && sim;
     const dObj = has ? Math.min(...sim.s.map((p) => dist([p.lat, p.lon], m.objetivo.pos))) : Infinity;
     const okObj = dObj <= m.objetivo.radio;
-    objetivos.push({ id: 'obj', ok: okObj, txt: `Llegar a la zona objetivo (≤ ${m.objetivo.radio} m)` });
+    objetivos.push({ id: 'obj', ok: okObj, txt: TX('Llegar a la zona objetivo (≤ {r} m)', { r: m.objetivo.radio }) });
     const start = route.length ? dist(route[0], m.inicio) <= m.radioVuelta : false;
     const back = has ? dist(route[route.length - 1], m.inicio) <= m.radioVuelta : false;
-    if (m.idaYVuelta) objetivos.push({ id: 'vuelta', ok: start && back, txt: 'Salir de la base y volver a ella' });
+    if (m.idaYVuelta) objetivos.push({ id: 'vuelta', ok: start && back, txt: TX('Salir de la base y volver a ella') });
     const okInt = has && ev && ev.valida;
-    objetivos.push({ id: 'trans', ok: !!okInt, txt: 'Sin tramos intransitables (> 25°)' });
+    objetivos.push({ id: 'trans', ok: !!okInt, txt: TX('Sin tramos intransitables (> 25°)') });
     const soc = has ? sim.summary.SOC_end : null, okBat = soc != null && soc >= m.soc_min;
-    objetivos.push({ id: 'bat', ok: okBat, txt: `Volver con batería ≥ ${Math.round(m.soc_min * 100)} %` });
+    objetivos.push({ id: 'bat', ok: okBat, txt: TX('Volver con batería ≥ {b} %', { b: Math.round(m.soc_min * 100) }) });
 
     if (!has) bloqueos.push({ k: 'vacia' });
     else {

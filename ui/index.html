@@ -21,7 +21,7 @@
   <!-- 3. Pantalla de inicio -->
   <div id="title">
     <h1 id="gameTitle" aria-label="ASTERTRAIL"></h1>
-    <button class="btn big" id="start">START</button>
+    <button class="btn big" id="start">INICIAR</button>
   </div>
 
   <!-- 4. Panel de misión (consola inferior) -->
@@ -43,6 +43,18 @@
   <div id="brief" class="off"></div>
   <button class="btn off" id="skip">SALTAR VIAJE</button>
 
+  <!-- [Marswalk] Idioma de la interfaz: EN (por defecto) / ES. Visible en el inicio y en el menú. -->
+  <div class="langsw" role="group" aria-label="Language / Idioma">
+    <button data-setlang="en" aria-label="English">EN</button><button data-setlang="es" aria-label="Español">ES</button>
+  </div>
+  <style>
+    .langsw { position: absolute; top: 28px; right: 36px; z-index: 50; display: flex; gap: 6px; font: 18px 'Jersey 10', monospace; }
+    .langsw button { font: inherit; letter-spacing: 2px; color: #9fc8ea; background: rgba(4,23,52,.75); border: 0; padding: 4px 12px;
+                     box-shadow: 0 0 0 2px #17365e; cursor: pointer; }
+    .langsw button:hover { color: #fff; }
+    .langsw button.on { color: #041734; background: #f2a906; box-shadow: 0 0 0 2px #ffd23f; }
+  </style>
+
   <!-- 5. Botón de sonido (uno solo, dos aspectos) -->
   <button class="btn icon" id="mute" aria-label="Sonido"></button>
 
@@ -51,6 +63,8 @@
 </div>
 
 <!-- Three.js r128 (build UMD) local -->
+<script src="i18n-en.js"></script>
+<script src="i18n.js"></script>
 <script src="vendor/three/three.min.js"></script>
 <script src="intro/js/main.js"></script>
 </body>

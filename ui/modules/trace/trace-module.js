@@ -98,7 +98,7 @@
       this.t0v = this.t0 ? this.t0() : M.t0;
       this.route = (loadState().rutas || {})[M.id] || [M.inicio.slice()];
       // DOM propio
-      this.root = document.createElement('div'); this.root.id = 'mod-trace'; this.root.innerHTML = HTML;
+      this.root = document.createElement('div'); this.root.id = 'mod-trace'; this.root.innerHTML = HTML; if (window.I18N) I18N.apply(this.root);
       document.body.appendChild(this.root);
       this.root.querySelectorAll('[data-t]').forEach((e) => { e.textContent = this.T(e.dataset.t); });
       // capas propias
@@ -157,25 +157,25 @@
       if (this.optRes) args.res = this.optRes;
       const r = RouteOpt.roundTrip(args);
       this.optLayer.clearLayers(); this.opt = null;
-      if (!r) { box.innerHTML = '<div class="msg">OPTIMIZAR: no hay ruta transitable entre la base y el objetivo.</div>'; return; }
+      if (!r) { box.innerHTML = `<div class="msg">${I18N.t('OPTIMIZAR: no hay ruta transitable entre la base y el objetivo.')}</div>`; return; }
       if (r.ms > 3000) this.optRes = 20;            // demasiado lento en esta máquina: la próxima vez, rejilla de 20 m
       const sim = SIM.simulate({ route: r.route, dem: this.dem, gp: this.gp, t0: this.t0v, vehicle: { soc_min: M.soc_min }, stops: this.stops });
       const ev = this.ter ? TraceRSS.evaluate({ route: r.route, sim, terrain: this.ter }) : null;
       this.opt = { route: r.route, sim, ev, ms: r.ms, res: r.res };
       L.polyline(r.route, { color: '#041734', weight: 9, interactive: false }).addTo(this.optLayer);
       L.polyline(r.route, { color: '#51e0ff', weight: 4, dashArray: '10 8', interactive: false }).addTo(this.optLayer);
-      L.marker(r.route[Math.floor(r.ida.route.length / 2)], { icon: this.icon('tag', 'ÓPTIMA'), interactive: false }).addTo(this.optLayer);
+      L.marker(r.route[Math.floor(r.ida.route.length / 2)], { icon: this.icon('tag', I18N.t('ÓPTIMA')), interactive: false }).addTo(this.optLayer);
       this.optPanel();
     }
     optPanel() {                                    // "tu ruta: RSS A · óptima: RSS B, Δ min" (se recalcula si cambias tu ruta)
       const box = this.$('optBox'), o = this.opt; if (!box) return; if (!o) { box.innerHTML = ''; return; }
       const mine = this.ev && this.chk && !this.chk.bloqueos.length ? this.sim.summary : null, S = o.sim.summary;
       const dMin = mine ? (S.dur_s - mine.dur_s) / 60 : null;
-      box.innerHTML = `<div class="msg ok">tu ruta: ${this.ev ? 'RSS ' + this.ev.rss + (mine ? '' : ' (no válida)') : 'sin trazar'} · óptima: RSS ${o.ev ? o.ev.rss : '--'}` +
+      box.innerHTML = `<div class="msg ok">${I18N.t('tu ruta:')} ${this.ev ? 'RSS ' + this.ev.rss + (mine ? '' : ' ' + I18N.t('(no válida)')) : I18N.t('sin trazar')} · ${I18N.t('óptima:')} RSS ${o.ev ? o.ev.rss : '--'}` +
         `${dMin == null ? '' : `, ${dMin <= 0 ? '−' : '+'}${Math.abs(dMin).toFixed(0)} min`}<br>` +
-        `Óptima: ${fmtKm(S.dist_m)} · ${fmtMin(S.dur_s)} · batería ${(S.SOC_end * 100).toFixed(0)} % · pend. máx ${S.theta_max_ruta.toFixed(0)}°. ` +
-        `A* sobre el DEM USGS (rejilla ${o.res} m, ${o.ms.toFixed(0)} ms): minimiza el tiempo del rover, evita > ${o.sim.vehicle.theta_max}° y penaliza la rugosidad.</div>` +
-        `<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" data-icon="route" id="tr-useOpt">USAR ÓPTIMA</button></div>`;
+        `${I18N.t('Óptima:')} ${fmtKm(S.dist_m)} · ${fmtMin(S.dur_s)} · ${I18N.t('batería')} ${(S.SOC_end * 100).toFixed(0)} % · ${I18N.t('pend. máx')} ${S.theta_max_ruta.toFixed(0)}°. ` +
+        I18N.t('A* sobre el DEM USGS (rejilla {r} m, {ms} ms): minimiza el tiempo del rover, evita > {th}° y penaliza la rugosidad.', { r: o.res, ms: o.ms.toFixed(0), th: o.sim.vehicle.theta_max }) + `</div>` +
+        `<div class="btns"><button class="px-btn" data-size="sm" data-variant="danger" data-icon="route" id="tr-useOpt">${I18N.t('USAR ÓPTIMA')}</button></div>`;
       const b = this.$('useOpt'); if (window.PxButton) PxButton.render(b);
       b.onclick = () => { if (this.running || !this.opt) return; this.route = this.opt.route.map((p) => p.slice()); this.optLayer.clearLayers(); this.changed(); };
     }
@@ -208,26 +208,26 @@
     }
     panel() {
       const { M, T, ev, sim, chk } = this, $ = (id) => this.$(id);
-      $('mName').textContent = 'MISIÓN · ' + M.nombre; $('mBrief').textContent = M.briefing;
+      $('mName').textContent = I18N.t('MISIÓN') + ' · ' + I18N.t(M.nombre); $('mBrief').textContent = I18N.t(M.briefing);
       $('mObj').innerHTML = chk.objetivos.map((o) => `<div><span class="${o.ok ? 'ok' : 'no'}">${o.ok ? '[✓]' : '[ ]'}</span> ${o.txt}</div>`).join('');
-      $('mSrc').textContent = `${M.fuente} Salida: sol ${Math.floor(this.t0v)} · ${hhmm(this.t0v)} LTST (hora actual del mapa térmico).`;
+      $('mSrc').textContent = I18N.t('{f} Salida: sol {d} · {h} LTST (hora actual del mapa térmico).', { f: I18N.t(M.fuente), d: Math.floor(this.t0v), h: hhmm(this.t0v) });
       const msgs = [];
       if (ev) {
-        $('rssN').textContent = ev.rss; $('rssC').textContent = ev.clase; $('rssC').style.background = colRSS(ev.rss);
+        $('rssN').textContent = ev.rss; $('rssC').textContent = I18N.t(ev.clase); $('rssC').style.background = colRSS(ev.rss);
         chk.bloqueos.filter((b) => b.k !== 'vacia' && b.k !== 'inicio').forEach((b) => msgs.push(`<div class="msg">${T(b.k, b)}</div>`));
         chk.fallos.forEach((b) => msgs.push(`<div class="msg">${T(b.k, b)}</div>`));
-        ev.criticos.filter((s) => !s.intransitable).forEach((s) => msgs.push(`<div class="msg warn">Tramo ${s.i} CRÍTICO (P ${s.P.toFixed(0)}): domina ${T('f_' + s.dominante)}.</div>`));
-        if (ev.unknown) msgs.push(`<div class="msg warn">${ev.unknown} tramo(s) con datos faltantes: cuentan como riesgo alto.</div>`);
-        if (!msgs.length) msgs.push(`<div class="msg ok">Ruta lista. ${chk.ok ? 'Cumple todos los objetivos.' : ''}</div>`);
+        ev.criticos.filter((s) => !s.intransitable).forEach((s) => msgs.push(`<div class="msg warn">${I18N.t('Tramo {i} CRÍTICO (P {p}): domina {f}.', { i: s.i, p: s.P.toFixed(0), f: T('f_' + s.dominante) })}</div>`));
+        if (ev.unknown) msgs.push(`<div class="msg warn">${I18N.t('{n} tramo(s) con datos faltantes: cuentan como riesgo alto.', { n: ev.unknown })}</div>`);
+        if (!msgs.length) msgs.push(`<div class="msg ok">${I18N.t('Ruta lista.')} ${chk.ok ? I18N.t('Cumple todos los objetivos.') : ''}</div>`);
         $('eDist').textContent = fmtKm(sim.summary.dist_m);
-        $('eDur').textContent = `${fmtMin(sim.summary.dur_s)} (Ct ${sim.summary.Ct}) · vuelta ${hhmm(sim.summary.t1)}`;
+        $('eDur').textContent = `${fmtMin(sim.summary.dur_s)} (Ct ${sim.summary.Ct}) · ${I18N.t('vuelta')} ${hhmm(sim.summary.t1)}`;
         $('eSoc').textContent = `${(sim.summary.SOC_end * 100).toFixed(0)} %`;
-        $('eRad').textContent = sim.summary.dose_mSv == null ? '--' : `${(sim.summary.dose_mSv * 1000).toFixed(0)} µSv (${(sim.summary.dose_mSv / SIM.LIMITE_CARRERA_mSv * 100).toFixed(3)} % del límite de carrera)`;
+        $('eRad').textContent = sim.summary.dose_mSv == null ? '--' : `${(sim.summary.dose_mSv * 1000).toFixed(0)} µSv (${(sim.summary.dose_mSv / SIM.LIMITE_CARRERA_mSv * 100).toFixed(3)} % ${I18N.t('del límite de carrera')})`;
         $('segs').innerHTML = '<tr><th>tramo</th><th>m</th><th>S</th><th>G</th><th>T</th><th>A</th><th>P</th></tr>' +
           ev.segs.map((s) => `<tr class="${s.critico ? 'crit' : ''}"><td><span class="sw" style="background:${colP(s.intransitable ? 0 : s.P)}"></span>${s.i}${s.intransitable ? ' ✕' : ''}</td><td>${s.d.toFixed(0)}</td><td>${s.S.toFixed(0)}</td><td>${s.G.toFixed(0)}</td><td>${s.T.toFixed(0)}</td><td>${s.A.toFixed(0)}</td><td>${s.P.toFixed(0)}</td></tr>`).join('');
       } else {
-        $('rssN').textContent = '--'; $('rssC').textContent = 'SIN RUTA'; $('rssC').style.background = '#9fc8ea';
-        msgs.push(`<div class="msg warn">Haz clic en el mapa para añadir waypoints desde la BASE.</div>`);
+        $('rssN').textContent = '--'; $('rssC').textContent = I18N.t('SIN RUTA'); $('rssC').style.background = '#9fc8ea';
+        msgs.push(`<div class="msg warn">${I18N.t('Haz clic en el mapa para añadir waypoints desde la BASE.')}</div>`);
         ['eDist', 'eDur', 'eSoc', 'eRad'].forEach((id) => { $(id).textContent = '--'; }); $('segs').innerHTML = '';
       }
       $('msgs').innerHTML = msgs.join('');
@@ -259,11 +259,11 @@
         const q = this.sampleAt(r.t), pos = [q.lat, q.lon];
         this.rover.setLatLng(pos); r.trail.addLatLng(pos);
         if (this.follow) this.map.panTo(pos, { animate: false });
-        if (r.goalT && r.t >= r.goalT && !r.reached) { r.reached = true; L.marker(M.objetivo.pos, { icon: this.icon('tag trgoal', 'MUESTRA TOMADA ✓'), interactive: false }).addTo(this.runLayer); }
+        if (r.goalT && r.t >= r.goalT && !r.reached) { r.reached = true; L.marker(M.objetivo.pos, { icon: this.icon('tag trgoal', I18N.t('MUESTRA TOMADA ✓')), interactive: false }).addTo(this.runLayer); }
         let acc = 0, seg = null; for (const s of this.ev.segs) { acc += s.d; if (q.dist <= acc + 1e-6) { seg = s; break; } }
-        this.$('hud').innerHTML = `<span><em>tramo</em> ${seg ? seg.i : '-'}</span><span><em>t</em> ${fmtMin((r.t - S.t0) * SOL_S)}</span><span><em>dist</em> ${fmtKm(q.dist)}</span>` +
-          `<span><em>v</em> ${(q.v * 3.6).toFixed(1)} km/h</span><span><em>pend.</em> ${(q.theta * 180 / Math.PI).toFixed(0)}°</span>` +
-          `<span><em>T peor</em> ${q.Tlo != null ? fmtC(q.Tlo) : '--'}</span><span><em>E</em> ${q.E.toFixed(0)} Wh</span><span><em>bat.</em> ${(q.SOC * 100).toFixed(0)} %</span>`;
+        this.$('hud').innerHTML = `<span><em>${I18N.t('tramo')}</em> ${seg ? seg.i : '-'}</span><span><em>t</em> ${fmtMin((r.t - S.t0) * SOL_S)}</span><span><em>dist</em> ${fmtKm(q.dist)}</span>` +
+          `<span><em>v</em> ${(q.v * 3.6).toFixed(1)} km/h</span><span><em>${I18N.t('pend.')}</em> ${(q.theta * 180 / Math.PI).toFixed(0)}°</span>` +
+          `<span><em>T peor</em> ${q.Tlo != null ? fmtC(q.Tlo) : '--'}</span><span><em>E</em> ${q.E.toFixed(0)} Wh</span><span><em>${I18N.t('bat.')}</em> ${(q.SOC * 100).toFixed(0)} %</span>`;
         const bar = this.$('socBar'); bar.style.width = `${Math.max(0, q.SOC * 100)}%`;
         bar.style.background = q.SOC < M.soc_min ? '#ff3b1f' : q.SOC < M.soc_min + 0.15 ? '#f26306' : '#4fd27a';
         if (r.t >= r.tEnd) return this.finish();
@@ -279,25 +279,25 @@
       ev.peores.filter((s) => s.R >= 25).forEach((s) => recs.push(T('rec_' + s.dominante, { i: s.i, th: (s.theta_p90 || 0).toFixed(0), t: s.Tlo_min != null ? fmtC(s.Tlo_min) : '--', o: Math.round(s.obst * 100) })));
       if (!recs.length) recs.push(T('rec_ok'));
       $('rTitle').textContent = ok ? T('exito') : T('fallo'); $('rTitle').style.color = ok ? '#4fd27a' : '#ff3b1f';
-      $('rRss').textContent = ev.rss; $('rCls').textContent = ev.clase; $('rCls').style.background = colRSS(ev.rss);
+      $('rRss').textContent = ev.rss; $('rCls').textContent = I18N.t(ev.clase); $('rCls').style.background = colRSS(ev.rss);
       const dEnd = r.failAt ? r.failAt.dist : S.dist_m, tEnd = (r.tEnd - S.t0) * SOL_S;
-      const rows = [['distancia recorrida', fmtKm(dEnd) + (r.failAt ? ` de ${fmtKm(S.dist_m)}` : '')], ['tiempo', fmtMin(tEnd)],
-        ['energía (ESTIMADO)', `${(r.failAt ? r.failAt.E : S.E_Wh).toFixed(0)} Wh`], ['batería final', `${((r.failAt ? r.failAt.SOC : S.SOC_end) * 100).toFixed(0)} %`],
-        ['velocidad media', `${S.v_media_real_kmh.toFixed(1)} km/h`], ['peor caso térmico', S.Tlo_min != null ? fmtC(S.Tlo_min) : '--'],
-        ['pendiente máx.', `${S.theta_max_ruta.toFixed(1)}°`], ['tramos críticos', `${ev.criticos.length}`]];
+      const rows = [[I18N.t('distancia recorrida'), fmtKm(dEnd) + (r.failAt ? ` ${I18N.t('de')} ${fmtKm(S.dist_m)}` : '')], [I18N.t('tiempo'), fmtMin(tEnd)],
+        [I18N.t('energía (ESTIMADO)'), `${(r.failAt ? r.failAt.E : S.E_Wh).toFixed(0)} Wh`], [I18N.t('batería final'), `${((r.failAt ? r.failAt.SOC : S.SOC_end) * 100).toFixed(0)} %`],
+        [I18N.t('velocidad media'), `${S.v_media_real_kmh.toFixed(1)} km/h`], [I18N.t('peor caso térmico'), S.Tlo_min != null ? fmtC(S.Tlo_min) : '--'],
+        [I18N.t('pendiente máx.'), `${S.theta_max_ruta.toFixed(1)}°`], [I18N.t('tramos críticos'), `${ev.criticos.length}`]];
       $('rRows').innerHTML = rows.map(([k, v]) => `<div class="row"><span class="k">${k}</span><b>${v}</b></div>`).join('');
       const objs = chk.objetivos.map((o) => Object.assign({}, o, { ok: o.ok && !(r.failAt && (o.id === 'bat' || o.id === 'vuelta')) }));
-      $('rObj').innerHTML = '<div class="k">OBJETIVOS</div>' + objs.map((o) => `<div><span class="${o.ok ? 'ok' : 'no'}">${o.ok ? '[✓]' : '[✕]'}</span> ${o.txt}</div>`).join('');
-      $('rRec').innerHTML = '<div class="k">RECOMENDACIONES</div>' + recs.map((x) => `<div class="msg warn">${x}</div>`).join('') +
-        (ev.peores.length ? `<p class="note">Tramos de mayor riesgo: ${ev.peores.map((s) => `${s.i} (R ${s.R.toFixed(0)})`).join(' · ')}</p>` : '');
+      $('rObj').innerHTML = '<div class="k">' + I18N.t('OBJETIVOS') + '</div>' + objs.map((o) => `<div><span class="${o.ok ? 'ok' : 'no'}">${o.ok ? '[✓]' : '[✕]'}</span> ${o.txt}</div>`).join('');
+      $('rRec').innerHTML = '<div class="k">' + I18N.t('RECOMENDACIONES') + '</div>' + recs.map((x) => `<div class="msg warn">${x}</div>`).join('') +
+        (ev.peores.length ? `<p class="note">${I18N.t('Tramos de mayor riesgo:')} ${ev.peores.map((s) => `${s.i} (R ${s.R.toFixed(0)})`).join(' · ')}</p>` : '');
       const g = TraceGame.record(loadState(), M.id, { ok, rss: ev.rss, clase: ev.clase, dist_m: dEnd, dur_s: tEnd,
         soc: r.failAt ? r.failAt.SOC : S.SOC_end, criticos: ev.criticos.length, n_wp: this.route.length });
       try { localStorage.setItem(STORE, JSON.stringify(g.estado)); } catch (e) {}
       const prev = g.intentos.length > 1 ? Math.max(...g.intentos.slice(0, -1).filter((x) => x.ok).map((x) => x.rss), -1) : -1;
-      $('rGame').innerHTML = `<div class="k">MEDALLAS ${g.nuevas.length ? `· ¡${g.nuevas.length} NUEVA${g.nuevas.length > 1 ? 'S' : ''}!` : ''}</div><div class="medals">${this.medalsHtml(g.medallas, g.nuevas)}</div>` +
-        (g.record ? `<div class="msg ok">¡NUEVO RÉCORD! Superaste tu mejor RSS (${prev}).</div>` : '') +
-        `<div class="k" style="margin-top:6px">COMPARACIÓN DE INTENTOS</div><table class="segs"><tr><th>#</th><th>estado</th><th>RSS</th><th>km</th><th>tiempo</th><th>bat.</th><th>críticos</th></tr>` +
-        g.intentos.slice().reverse().map((x, j) => `<tr style="${j === 0 ? 'color:#e8f4ff' : ''}"><td>${x.n}${j === 0 ? ' ◀' : ''}</td><td>${x.ok ? 'OK' : 'FALLO'}</td><td style="color:${colRSS(x.rss)}">${x.rss}</td><td>${(x.dist_m / 1000).toFixed(2)}</td><td>${fmtMin(x.dur_s)}</td><td>${Math.round(x.soc * 100)}%</td><td>${x.criticos}</td></tr>`).join('') + '</table>' +
+      $('rGame').innerHTML = `<div class="k">MEDALLAS ${g.nuevas.length ? `· ¡${g.nuevas.length} ${I18N.t(g.nuevas.length > 1 ? 'NUEVAS' : 'NUEVA')}!` : ''}</div><div class="medals">${this.medalsHtml(g.medallas, g.nuevas)}</div>` +
+        (g.record ? `<div class="msg ok">${I18N.t('¡NUEVO RÉCORD! Superaste tu mejor RSS ({p}).', { p: prev })}</div>` : '') +
+        `<div class="k" style="margin-top:6px">${I18N.t('COMPARACIÓN DE INTENTOS')}</div><table class="segs"><tr><th>#</th><th>estado</th><th>RSS</th><th>km</th><th>tiempo</th><th>bat.</th><th>críticos</th></tr>` +
+        g.intentos.slice().reverse().map((x, j) => `<tr style="${j === 0 ? 'color:#e8f4ff' : ''}"><td>${x.n}${j === 0 ? ' ◀' : ''}</td><td>${x.ok ? 'OK' : I18N.t('FALLO')}</td><td style="color:${colRSS(x.rss)}">${x.rss}</td><td>${(x.dist_m / 1000).toFixed(2)}</td><td>${fmtMin(x.dur_s)}</td><td>${Math.round(x.soc * 100)}%</td><td>${x.criticos}</td></tr>`).join('') + '</table>' +
         (g.mejor ? `<p class="note">Mejor marca: RSS ${g.mejor.rss} (${g.mejor.clase}), intento ${g.mejor.n}.</p>` : '');
       this.progressPanel();
       $('modal').hidden = false; this.root.querySelectorAll('#tr-modal .px-btn').forEach((b) => PxButton.render(b));

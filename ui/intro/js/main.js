@@ -218,12 +218,12 @@ const bar = $('#bar'), SEGS = 40, segEls = [];
 for (let i = 0; i < SEGS; i++) { const s = document.createElement('i'); bar.appendChild(s); segEls.push(s); }
 let litPrev = -1;
 function missionStatus() {
-  return prog < .015 ? 'PREPARANDO DESPEGUE' : prog < .12 ? 'SALIENDO DE LA ATMÓSFERA' : prog < .8 ? 'TRÁNSITO INTERPLANETARIO'
-       : prog < 1 ? 'APROXIMACIÓN A MARTE' : 'LLEGADA COMPLETADA';
+  return I18N.t(prog < .015 ? 'PREPARANDO DESPEGUE' : prog < .12 ? 'SALIENDO DE LA ATMÓSFERA' : prog < .8 ? 'TRÁNSITO INTERPLANETARIO'
+       : prog < 1 ? 'APROXIMACIÓN A MARTE' : 'LLEGADA COMPLETADA');
 }
 function updatePanel() {
   $('#pStatus').textContent = missionStatus();
-  $('#pHours').textContent = `${fmt(prog * CONFIG.totalHours)} h de ${fmt(CONFIG.totalHours)} h`;
+  $('#pHours').textContent = I18N.t('{a} h de {b} h', { a: fmt(prog * CONFIG.totalHours), b: fmt(CONFIG.totalHours) });
   $('#pKm').textContent = `${fmt(prog * CONFIG.totalKm)} km`;
   const lit = Math.floor(prog * SEGS + (prog >= 1 ? .5 : 0));
   if (lit !== litPrev) { segEls.forEach((s, i) => s.classList.toggle('on', i < lit)); litPrev = lit; }
@@ -292,7 +292,7 @@ const OFFLINE_Q = /[?&]offline=1\b/.test(location.search);
 function showMenu() {
   state = 'menu'; $panel.classList.add('off'); $title.classList.add('off'); $('#skip').classList.add('off');
   $('#menu').classList.remove('off'); $('#brief').classList.remove('off');
-  typewriter(CONFIG.briefing);
+  typewriter(CONFIG.briefing.map((l) => I18N.t(l)));
 }
 let twTimer = null;
 function typewriter(lines) {
@@ -315,6 +315,7 @@ document.querySelectorAll('#menu [data-go]').forEach((b) => b.onclick = () => {
   initAudio(); sfx('click', 780);
   let url = b.dataset.go;
   if (OFFLINE_Q) url = url.replace(/(#|$)/, (m) => (url.includes('?') ? '&' : '?') + 'offline=1' + m);
+  url = I18N.withLang(url);                                      // el idioma elegido viaja a la app
   $fade.classList.add('on'); setTimeout(() => { location.href = url; }, 480);
 });
 // Volver desde un módulo (index.html#menu): sin repetir el viaje, directo a Marte con el menú.
@@ -333,7 +334,7 @@ function leave() {                                        // fundido lento a neg
 function goNext() {
   document.dispatchEvent(new CustomEvent('mars:arrived'));
   if (CONFIG.nextPage) { location.href = CONFIG.nextPage; return; }
-  toast('LLEGADA COMPLETADA · falta conectar CONFIG.nextPage');   // mientras no haya página destino, vuelve al inicio
+  toast(I18N.t('LLEGADA COMPLETADA · falta conectar CONFIG.nextPage'));   // mientras no haya página destino, vuelve al inicio
   setTimeout(() => {
     state = 'title'; prog = 0; spd = 0; litPrev = -1; $panel.classList.add('off'); $title.classList.remove('off'); buildTitle();
     if (audio.music) audio.music.volume = .5;

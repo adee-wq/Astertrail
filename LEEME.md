@@ -12,6 +12,12 @@ cuánto dura, cuánta batería queda, qué frío hará en el peor caso y dónde 
 
 Si algo falla en JavaScript aparece un recuadro rojo con la línea (`ui/errbox.js`).
 
+## Idioma
+
+En la pantalla de inicio (y en el menú) hay un selector **EN | ES**. Por defecto la interfaz está en **inglés**. El idioma se guarda en el navegador y viaja con la URL (`?lang=es`).
+Para añadir o corregir un texto: `ui/i18n-en.js` (clave = el texto en español tal como aparece en la app, valor = inglés).
+`ui/i18n.js` traduce el HTML al cargar y los textos de JavaScript con `I18N.t(...)`.
+
 ## Cómo se lee la interfaz
 
 | Dónde | Qué es | Aspecto |
